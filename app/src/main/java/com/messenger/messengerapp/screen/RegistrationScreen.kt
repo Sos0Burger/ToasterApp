@@ -1,5 +1,6 @@
 package com.messenger.messengerapp.screen
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,6 +38,14 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     val passwordRepeat = remember { mutableStateOf("") }
+    val enabled = remember {
+        mutableStateOf(
+            false
+        )
+    }
+    val inputEnabled = remember {
+        mutableStateOf(true)
+    }
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -44,13 +54,39 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
 
         Spacer(modifier = Modifier.padding(top = 16.dp))
 
-        EmailInput(email = email)
-        PasswordInput(password = password)
-        PasswordRepeatInput(password = password, passwordRepeat = passwordRepeat)
+        EmailInput(email = email, inputEnabled) {
+            if (email.value.matches(Regex("[A-z0-9]{3,}@[a-z0-9]+\\.[a-z]+"))
+                && password.value.matches(Regex("[A-z0-9]{8,32}"))
+                && password.value == passwordRepeat.value
+            ) {
+                enabled.value = true
+            }
+        }
+
+        PasswordInput(password = password, inputEnabled) {
+            if (email.value.matches(Regex("[A-z0-9]{3,}@[a-z0-9]+\\.[a-z]+"))
+                && password.value.matches(Regex("[A-z0-9]{8,32}"))
+                && password.value == passwordRepeat.value
+            ) {
+                enabled.value = true
+            }
+        }
+
+        PasswordRepeatInput(password = password, passwordRepeat = passwordRepeat, inputEnabled) {
+            if (email.value.matches(Regex("[A-z0-9]{3,}@[a-z0-9]+\\.[a-z]+"))
+                && password.value.matches(Regex("[A-z0-9]{8,32}"))
+                && password.value == passwordRepeat.value
+            ) {
+                enabled.value = true
+            }
+        }
 
         Spacer(modifier = Modifier.padding(top = 16.dp))
 
-        RegistrationButton(email = email, password = password, passwordRepeat = passwordRepeat)
+        RegistrationButton(
+            enabled = enabled,
+            inputEnabled = inputEnabled
+        )
     }
     Row(
         verticalAlignment = Alignment.Bottom,
@@ -64,7 +100,7 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.padding(top = 4.dp))
 
-            LoginButton()
+            LoginButton(inputEnabled, enabled = enabled)
         }
 
     }
@@ -83,12 +119,16 @@ fun AppIcon() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmailInput(email: MutableState<String>) {
+fun EmailInput(email: MutableState<String>, inputEnabled: MutableState<Boolean>, checkInput: () -> Unit) {
     TextField(
         value = email.value,
         singleLine = true,
+        enabled = inputEnabled.value,
         shape = MaterialTheme.shapes.medium,
-        onValueChange = { email.value = it },
+        onValueChange = {
+            email.value = it
+            checkInput()
+        },
         label = { Text(text = "Почта") },
         supportingText = {
             if (!email.value.matches(Regex("[A-z0-9]{3,}@[a-z0-9]+\\.[a-z]+"))) {
@@ -103,7 +143,9 @@ fun EmailInput(email: MutableState<String>) {
             errorIndicatorColor = Color.Transparent,
             errorSupportingTextColor = Orange,
             errorLabelColor = Color.DarkGray,
-            errorCursorColor = Color.Gray
+            errorCursorColor = Color.Gray,
+            disabledIndicatorColor = Color.Transparent,
+            disabledTextColor = Color.White
         ),
         modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
     )
@@ -111,17 +153,21 @@ fun EmailInput(email: MutableState<String>) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PasswordInput(password: MutableState<String>) {
+fun PasswordInput(password: MutableState<String>, inputEnabled: MutableState<Boolean>, checkInput: () -> Unit) {
     TextField(
         value = password.value,
         singleLine = true,
+        enabled = inputEnabled.value,
         supportingText = {
             if (!password.value.matches(Regex("[A-z0-9]{8,32}"))) {
                 Text(text = "Пароль от 8 до 32 символов латиницей")
             }
         },
         shape = MaterialTheme.shapes.medium,
-        onValueChange = { password.value = it },
+        onValueChange = {
+            password.value = it
+            checkInput()
+        },
         label = { Text(text = "Пароль") },
         colors = TextFieldDefaults.textFieldColors(
             focusedIndicatorColor = Color.Transparent,
@@ -130,7 +176,9 @@ fun PasswordInput(password: MutableState<String>) {
             errorIndicatorColor = Color.Transparent,
             errorSupportingTextColor = Orange,
             errorLabelColor = Color.DarkGray,
-            errorCursorColor = Color.Gray
+            errorCursorColor = Color.Gray,
+            disabledIndicatorColor = Color.Transparent,
+            disabledTextColor = Color.White
         ),
         isError = !password.value.matches(Regex("[A-z0-9]{8,32}")),
         visualTransformation = PasswordVisualTransformation(),
@@ -142,18 +190,24 @@ fun PasswordInput(password: MutableState<String>) {
 @Composable
 fun PasswordRepeatInput(
     password: MutableState<String>,
-    passwordRepeat: MutableState<String>
+    passwordRepeat: MutableState<String>,
+    inputEnabled: MutableState<Boolean>,
+    checkInput: () -> Unit
 ) {
     TextField(
         value = passwordRepeat.value,
         singleLine = true,
+        enabled = inputEnabled.value,
         supportingText = {
             if (passwordRepeat.value != password.value) {
                 Text(text = "Пароли не совпадают")
             }
         },
         shape = MaterialTheme.shapes.medium,
-        onValueChange = { passwordRepeat.value = it },
+        onValueChange = {
+            passwordRepeat.value = it
+            checkInput()
+        },
         label = { Text(text = "Повторите пароль") },
         colors = TextFieldDefaults.textFieldColors(
             focusedIndicatorColor = Color.Transparent,
@@ -162,7 +216,9 @@ fun PasswordRepeatInput(
             errorIndicatorColor = Color.Transparent,
             errorSupportingTextColor = Orange,
             errorLabelColor = Color.DarkGray,
-            errorCursorColor = Color.Gray
+            errorCursorColor = Color.Gray,
+            disabledIndicatorColor = Color.Transparent,
+            disabledTextColor = Color.White
         ),
         isError = passwordRepeat.value != password.value,
         visualTransformation = PasswordVisualTransformation(),
@@ -172,24 +228,32 @@ fun PasswordRepeatInput(
 
 @Composable
 fun RegistrationButton(
-    email: MutableState<String>,
-    password: MutableState<String>,
-    passwordRepeat: MutableState<String>
+    enabled: MutableState<Boolean>,
+    inputEnabled: MutableState<Boolean>
 ) {
+    val clicked = remember { mutableStateOf(false) }
+
     TextButton(
-        onClick = { /*TODO*/ },
+        onClick = {
+            clicked.value = true
+            enabled.value = false
+            inputEnabled.value = false
+            /*TODO*/
+        },
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
             disabledContainerColor = Color.DarkGray,
             disabledContentColor = Color.Black,
             contentColor = Color.DarkGray
         ),
-        contentPadding = PaddingValues(start = 30.dp, end = 30.dp),
-        enabled = email.value.matches(Regex("[A-z0-9]{3,}@[a-z0-9]+\\.[a-z]+"))
-                && password.value.matches(Regex("[A-z0-9]{8,32}"))
-                && password.value == passwordRepeat.value,
+        enabled = enabled.value,
+        modifier = Modifier.size(256.dp, 40.dp),
     ) {
-        Text(text = "Зарегистрироваться")
+        if (clicked.value) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp, 24.dp), color = Orange)
+        } else {
+            Text(text = "Зарегистрироваться")
+        }
     }
 }
 
@@ -199,13 +263,16 @@ fun LoginSuggestionText() {
 }
 
 @Composable
-fun LoginButton() {
+fun LoginButton(loginEnabled: MutableState<Boolean>, enabled: MutableState<Boolean>) {
     TextButton(
-        onClick = { /*TODO*/ },
+        onClick = { Log.d("хуй", enabled.value.toString())/*TODO*/ },
         contentPadding = PaddingValues(start = 64.dp, end = 64.dp),
+        enabled = loginEnabled.value,
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
-            contentColor = Color.DarkGray
+            contentColor = Color.DarkGray,
+            disabledContentColor = Color.Gray,
+            disabledContainerColor = Color.DarkGray
         )
     ) {
         Text(text = "Войти")
