@@ -47,10 +47,24 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
         EmailInput(email = email)
         PasswordInput(password = password)
         PasswordRepeatInput(password = password, passwordRepeat = passwordRepeat)
+
+        Spacer(modifier = Modifier.padding(top = 16.dp))
+
+        RegistrationButton(email = email, password = password, passwordRepeat = passwordRepeat)
     }
-    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.Center) {
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(bottom = 32.dp)
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            RegistrationButton(email = email, password = password, passwordRepeat = passwordRepeat)
+
+
+            LoginSuggestionText()
+
+            Spacer(modifier = Modifier.padding(top = 4.dp))
+
+            LoginButton()
         }
 
     }
@@ -179,6 +193,24 @@ fun RegistrationButton(
     }
 }
 
+@Composable
+fun LoginSuggestionText() {
+    Text(text = "Уже зарегистрированы?", color = Color.White)
+}
+
+@Composable
+fun LoginButton() {
+    TextButton(
+        onClick = { /*TODO*/ },
+        contentPadding = PaddingValues(start = 64.dp, end = 64.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White,
+            contentColor = Color.DarkGray
+        )
+    ) {
+        Text(text = "Войти")
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
