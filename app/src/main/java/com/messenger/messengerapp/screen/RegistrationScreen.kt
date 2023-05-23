@@ -1,6 +1,5 @@
 package com.messenger.messengerapp.screen
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -100,7 +99,7 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.padding(top = 4.dp))
 
-            LoginButton(inputEnabled, enabled = enabled)
+            LoginButton(inputEnabled)
         }
 
     }
@@ -263,11 +262,11 @@ fun LoginSuggestionText() {
 }
 
 @Composable
-fun LoginButton(loginEnabled: MutableState<Boolean>, enabled: MutableState<Boolean>) {
+fun LoginButton(inputEnabled: MutableState<Boolean>) {
     TextButton(
-        onClick = { Log.d("хуй", enabled.value.toString())/*TODO*/ },
+        onClick = { /*TODO*/ },
         contentPadding = PaddingValues(start = 64.dp, end = 64.dp),
-        enabled = loginEnabled.value,
+        enabled = inputEnabled.value,
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
             contentColor = Color.DarkGray,
