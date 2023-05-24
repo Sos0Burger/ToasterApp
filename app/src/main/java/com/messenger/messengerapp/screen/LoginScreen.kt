@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.messenger.messengerapp.ui.theme.Orange
 
 @Composable
-fun LoginScreen(onNavigateToMainScreen: () -> Unit) {
+fun LoginScreen(isReg:Boolean, onNavigateToMainScreen: () -> Unit) {
     val inputEnabled = remember {
         mutableStateOf(true)
     }
@@ -34,22 +34,27 @@ fun LoginScreen(onNavigateToMainScreen: () -> Unit) {
     val password = remember {
         mutableStateOf("")
     }
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Black
     ) {
-        AppIcon()
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AppIcon()
 
-        Spacer(modifier = Modifier.padding(top = 16.dp))
+            Spacer(modifier = Modifier.padding(top = 16.dp))
 
-        EmailInput(email = email, inputEnabled){}
+            EmailInput(email = email, inputEnabled) {}
 
-        PasswordInput(password = password, inputEnabled = inputEnabled ) {}
+            PasswordInput(password = password, inputEnabled = inputEnabled) {}
 
-        Spacer(modifier = Modifier.padding(top = 16.dp))
+            Spacer(modifier = Modifier.padding(top = 16.dp))
 
-        LoginScreenButton(inputEnabled = inputEnabled)
+            LoginScreenButton(inputEnabled = inputEnabled)
 
+        }
     }
 }
 @Composable
@@ -83,6 +88,6 @@ fun LoginScreenPreview() {
         modifier = Modifier.fillMaxSize(),
         color = Color.Black
     ) {
-        LoginScreen({})
+        LoginScreen(false){}
     }
 }
