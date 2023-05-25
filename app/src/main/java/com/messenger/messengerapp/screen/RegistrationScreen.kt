@@ -66,7 +66,8 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
 
         Column(
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(bottom = 128.dp)
         ) {
             AppIcon()
 
@@ -110,8 +111,9 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
                 inputEnabled = inputEnabled,
                 email = email,
                 password = password,
-                snackBarState = snackBarState
-            ){onNavigateToLogin()}
+                snackBarState = snackBarState,
+                errorMessage = errorMessage
+            ) { onNavigateToLogin() }
         }
         Row(
             verticalAlignment = Alignment.Bottom,
@@ -125,7 +127,7 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
 
                 Spacer(modifier = Modifier.padding(top = 4.dp))
 
-                LoginButton(inputEnabled){onNavigateToLogin()}
+                LoginButton(inputEnabled) { onNavigateToLogin() }
 
             }
 
@@ -270,6 +272,7 @@ fun PasswordRepeatInput(
         modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
     )
 }
+
 @Composable
 fun RegistrationButton(
     enabled: MutableState<Boolean>,
@@ -277,6 +280,7 @@ fun RegistrationButton(
     email: MutableState<String>,
     password: MutableState<String>,
     snackBarState: MutableState<Boolean>,
+    errorMessage: MutableState<String>,
     onNavigateToLogin: () -> Unit
 ) {
     val clicked = remember { mutableStateOf(false) }
@@ -287,13 +291,18 @@ fun RegistrationButton(
             inputEnabled.value = false
             val userApi = UserApiImpl()
             val response =
-                userApi.registration(RequestUserDTO(email = email.value, password = MessageDigest.getInstance("SHA-256").digest(password.value.toByteArray()).toString()))
+                userApi.registration(RequestUserDTO(email = email.value,
+                    password = MessageDigest.getInstance("SHA-256")
+                        .digest(password.value.toByteArray()).toString()
+                )
+                )
             response.enqueue(object : Callback<Unit> {
                 override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
                     if (response.isSuccessful) {
                         Log.d("server", response.code().toString())
                         User.EMAIL = email.value
-                        User.HASH = MessageDigest.getInstance("SHA-256").digest(password.value.toByteArray()).toString()
+                        User.HASH = MessageDigest.getInstance("SHA-256")
+                            .digest(password.value.toByteArray()).toString()
                         with(User.sharedPrefs.edit()) {
                             putString("email", User.EMAIL)
                             putString("hash", User.HASH)
@@ -301,9 +310,13 @@ fun RegistrationButton(
                         }
                         onNavigateToLogin()
                     }
+                    else{
+                        Log.d("server", response.code().toString()+response.errorBody())
+                    }
                 }
 
                 override fun onFailure(call: Call<Unit>, t: Throwable) {
+                    errorMessage.value = "Ошибка подключения"
                     snackBarState.value = true
                     Log.d("server", t.message.toString())
                     clicked.value = false
@@ -337,9 +350,9 @@ fun LoginSuggestionText() {
 }
 
 @Composable
-fun LoginButton(inputEnabled: MutableState<Boolean>, onNavigateToLogin: () -> Unit ) {
+fun LoginButton(inputEnabled: MutableState<Boolean>, onNavigateToLogin: () -> Unit) {
     TextButton(
-        onClick = { onNavigateToLogin()},
+        onClick = { onNavigateToLogin() },
         contentPadding = PaddingValues(start = 64.dp, end = 64.dp),
         enabled = inputEnabled.value,
         colors = ButtonDefaults.buttonColors(

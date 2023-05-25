@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.data.User.sharedPrefs
 import com.messenger.messengerapp.screen.LoginScreen
+import com.messenger.messengerapp.screen.MainScreen
 import com.messenger.messengerapp.screen.RegistrationScreen
 import com.messenger.messengerapp.ui.theme.MessengerAppTheme
 
@@ -56,7 +57,7 @@ fun Screen(){
             }
         }
         composable("Main"){
-
+            MainScreen()
         }
     }
 }

@@ -26,6 +26,7 @@ import com.messenger.messengerapp.R
 fun MainScreen() {
     val iconButtonModifier = Modifier.height(48.dp).width(48.dp)
     val iconTextModifier = Modifier.size(32.dp, 32.dp)
+
     Row(
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.SpaceAround,
