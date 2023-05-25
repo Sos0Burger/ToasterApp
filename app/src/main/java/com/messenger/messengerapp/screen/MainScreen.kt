@@ -24,63 +24,68 @@ import com.messenger.messengerapp.R
 
 @Composable
 fun MainScreen() {
-    val iconButtonModifier = Modifier.height(48.dp).width(48.dp)
+    val iconButtonModifier = Modifier
+        .height(48.dp)
+        .width(48.dp)
     val iconTextModifier = Modifier.size(32.dp, 32.dp)
 
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.SpaceAround,
-        modifier = Modifier.padding(bottom = 8.dp)
-    ) {
-        IconButton(
-            onClick = { /*TODO*/ },
-            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
-            modifier = iconButtonModifier
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.news_icon),
-                contentDescription = null,
-                modifier = iconTextModifier
-            )
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
 
-            Text(text = "Новости", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
-        }
-        IconButton(
-            onClick = { /*TODO*/ },
-            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
-            modifier = iconButtonModifier
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.SpaceAround,
+            modifier = Modifier.padding(bottom = 8.dp)
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.chat_icon),
-                contentDescription = null,
-                modifier = iconTextModifier
-            )
+            IconButton(
+                onClick = { /*TODO*/ },
+                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                modifier = iconButtonModifier
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.news_icon),
+                    contentDescription = null,
+                    modifier = iconTextModifier
+                )
 
-            Text(text = "Чат", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
-        }
-        IconButton(
-            onClick = { /*TODO*/ },
-            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
-            modifier = iconButtonModifier
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.friend_icon),
-                contentDescription = null,
-                modifier = iconTextModifier
-            )
-            Text(text = "Друзья", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
-        }
-        IconButton(
-            onClick = { /*TODO*/ },
-            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
-            modifier = iconButtonModifier
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.account_icon),
-                contentDescription = null,
-                modifier = iconTextModifier
-            )
-            Text(text = "Профиль", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+                Text(text = "Новости", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+            }
+            IconButton(
+                onClick = { /*TODO*/ },
+                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                modifier = iconButtonModifier
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.chat_icon),
+                    contentDescription = null,
+                    modifier = iconTextModifier
+                )
+
+                Text(text = "Чат", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+            }
+            IconButton(
+                onClick = { /*TODO*/ },
+                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                modifier = iconButtonModifier
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.friend_icon),
+                    contentDescription = null,
+                    modifier = iconTextModifier
+                )
+                Text(text = "Друзья", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+            }
+            IconButton(
+                onClick = { /*TODO*/ },
+                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                modifier = iconButtonModifier
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.account_icon),
+                    contentDescription = null,
+                    modifier = iconTextModifier
+                )
+                Text(text = "Профиль", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+            }
         }
     }
 

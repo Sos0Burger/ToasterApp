@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         sharedPrefs = getSharedPreferences("user", Context.MODE_PRIVATE)
         User.USER_ID = sharedPrefs.getInt("user_id", -1)
-        if(User.USER_ID == -1) User.USER_ID = null
+        if (User.USER_ID == -1) User.USER_ID = null
         User.EMAIL = sharedPrefs.getString("email", null)
         User.HASH = sharedPrefs.getString("hash", null)
 
@@ -42,21 +42,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 @Composable
-fun Screen(){
+fun Screen() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = if (User.EMAIL==null)"Registration" else "Login"){
-        composable("Registration"){
+    NavHost(
+        navController = navController,
+        startDestination = if (User.EMAIL == null) "Registration" else "Login"
+    ) {
+        composable("Registration") {
             RegistrationScreen {
                 navController.navigate("Login")
             }
         }
-        composable("Login"){
-            LoginScreen(User.EMAIL!=null) {
-                navController.navigate("Main")
-            }
+        composable("Login") {
+            LoginScreen(User.EMAIL != null,
+                {
+                    navController.navigate("Main") {
+                        popUpTo(navController.graph.id){
+                            inclusive = true
+                        }
+                    }
+                },
+                { navController.navigate("Registration") })
         }
-        composable("Main"){
+        composable("Main") {
             MainScreen()
         }
     }

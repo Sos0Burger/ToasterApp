@@ -1,7 +1,6 @@
 package com.messenger.messengerapp.api
 
 import com.messenger.messengerapp.dto.RequestUserDTO
-import com.messenger.messengerapp.exception.ExceptionMessage
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -12,6 +11,6 @@ interface UserApi {
     @POST("user")
     fun registration(@Body requestUserDTO: RequestUserDTO): Call<Unit>
 
-    @GET("auth")
-    fun auth(@Header("email") email:String, @Header("hash") hash:String): Call<ExceptionMessage>
+    @GET("user/auth")
+    fun auth(@Header("email") email:String, @Header("hash") hash:String): Call<Any>
 }

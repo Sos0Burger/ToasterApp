@@ -34,12 +34,13 @@ import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.RequestUserDTO
+import com.messenger.messengerapp.hasher.Hasher
 import com.messenger.messengerapp.infoMessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.security.MessageDigest
 
 
 @Composable
@@ -291,27 +292,32 @@ fun RegistrationButton(
             inputEnabled.value = false
             val userApi = UserApiImpl()
             val response =
-                userApi.registration(RequestUserDTO(email = email.value,
-                    password = MessageDigest.getInstance("SHA-256")
-                        .digest(password.value.toByteArray()).toString()
-                )
+                userApi.registration(
+                    RequestUserDTO(
+                        email = email.value,
+                        password = Hasher.hash(password.value)
+                    )
                 )
             response.enqueue(object : Callback<Unit> {
                 override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
-                    if (response.isSuccessful) {
+                    if (response.code() == 201) {
                         Log.d("server", response.code().toString())
                         User.EMAIL = email.value
-                        User.HASH = MessageDigest.getInstance("SHA-256")
-                            .digest(password.value.toByteArray()).toString()
+                        User.HASH = Hasher.hash(password.value)
                         with(User.sharedPrefs.edit()) {
                             putString("email", User.EMAIL)
                             putString("hash", User.HASH)
                             apply()
                         }
                         onNavigateToLogin()
-                    }
-                    else{
-                        Log.d("server", response.code().toString()+response.errorBody())
+                    } else {
+                        val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                        Log.d(
+                            "server",
+                            response.code().toString() + " " + jsonObj.getString("message")
+                        )
+                        errorMessage.value = jsonObj.getString("message")
+                        Log.d("server", response.code().toString() + response.errorBody())
                     }
                 }
 
