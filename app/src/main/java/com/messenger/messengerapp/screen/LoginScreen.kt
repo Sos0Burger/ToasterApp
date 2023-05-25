@@ -15,6 +15,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.hasher.Hasher
 import com.messenger.messengerapp.infoMessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
+import kotlinx.coroutines.delay
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
@@ -124,34 +126,39 @@ fun LoginScreen(
     }
 
 
+    LaunchedEffect(Unit) {
+        delay(500L)
+        if (isReg) {
+            val userApi = UserApiImpl()
+            val response = userApi.auth(User.EMAIL.toString(), User.HASH.toString())
+            response.enqueue(object : Callback<Any> {
+                override fun onResponse(
+                    call: Call<Any>, response: Response<Any>
+                ) {
+                    if (response.code() == 200) {
+                        User.USER_ID = response.body() as? Int?
+                        onNavigateToMainScreen()
+                    } else {
+                        val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                        Log.d(
+                            "server",
+                            response.code().toString() + " " + jsonObj.getString("message")
+                        )
+                        errorMessage.value = jsonObj.getString("message")
+                        snackBarState.value = true
+                        inputEnabled.value = true
+                    }
+                }
 
-    if (isReg) {
-        val userApi = UserApiImpl()
-        val response = userApi.auth(User.EMAIL.toString(), User.HASH.toString())
-        response.enqueue(object : Callback<Any> {
-            override fun onResponse(
-                call: Call<Any>, response: Response<Any>
-            ) {
-                if (response.code() == 200) {
-                    User.USER_ID = response.body() as? Int?
-                    onNavigateToMainScreen()
-                } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
-                    Log.d("server", response.code().toString() + " " + jsonObj.getString("message"))
-                    errorMessage.value = jsonObj.getString("message")
+                override fun onFailure(call: Call<Any>, t: Throwable) {
+                    Log.d("server", t.message.toString())
+                    errorMessage.value = "Ошибка подключения"
                     snackBarState.value = true
                     inputEnabled.value = true
                 }
-            }
 
-            override fun onFailure(call: Call<Any>, t: Throwable) {
-                Log.d("server", t.message.toString())
-                errorMessage.value = "Ошибка подключения"
-                snackBarState.value = true
-                inputEnabled.value = true
-            }
-
-        })
+            })
+        }
     }
 }
 
