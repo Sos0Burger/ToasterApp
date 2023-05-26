@@ -20,7 +20,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.screen.mainSubscreen.News
 
 @Composable
 fun MainScreen() {
@@ -28,9 +32,16 @@ fun MainScreen() {
         .height(48.dp)
         .width(48.dp)
     val iconTextModifier = Modifier.size(32.dp, 32.dp)
-
+    val navController = rememberNavController()
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-
+        NavHost(
+            navController = navController,
+            startDestination = "news"
+        ) {
+            composable("news") {
+                News()
+            }
+        }
         Row(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceAround,
@@ -47,7 +58,11 @@ fun MainScreen() {
                     modifier = iconTextModifier
                 )
 
-                Text(text = "Новости", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+                Text(
+                    text = "Новости",
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(top = 34.dp)
+                )
             }
             IconButton(
                 onClick = { /*TODO*/ },
@@ -72,7 +87,11 @@ fun MainScreen() {
                     contentDescription = null,
                     modifier = iconTextModifier
                 )
-                Text(text = "Друзья", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+                Text(
+                    text = "Друзья",
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(top = 34.dp)
+                )
             }
             IconButton(
                 onClick = { /*TODO*/ },
@@ -84,7 +103,11 @@ fun MainScreen() {
                     contentDescription = null,
                     modifier = iconTextModifier
                 )
-                Text(text = "Профиль", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
+                Text(
+                    text = "Профиль",
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(top = 34.dp)
+                )
             }
         }
     }
