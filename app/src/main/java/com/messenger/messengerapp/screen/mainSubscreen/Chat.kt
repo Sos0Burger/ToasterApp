@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.messenger.messengerapp.screen.mainSubscreen
 
 import android.util.Log
@@ -34,6 +36,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
+import com.google.accompanist.swiperefresh.SwipeRefreshState
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
@@ -145,7 +149,17 @@ fun Chat() {
         } else {
             SwipeRefresh(
                 state = rememberSwipeRefreshState(isRefreshing),
-                onRefresh = { viewModel.refresh() { getFriends() } },
+                onRefresh = { viewModel.refresh { getFriends() } },
+                indicator = { state: SwipeRefreshState, trigger ->
+                    SwipeRefreshIndicator(
+                        state = state,
+                        refreshTriggerDistance = trigger,
+                        scale = true,
+                        backgroundColor = Color.DarkGray,
+                        contentColor = Orange,
+                        shape = CircleShape
+                    )
+                }
             ) {
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(count = friendsCount.value) { index ->
@@ -162,10 +176,14 @@ fun Chat() {
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
-                                        .size(64.dp)
+                                        .size(96.dp)
                                         .clip(CircleShape)
                                 )
-                                Column(modifier = Modifier.padding(start = 8.dp).fillMaxWidth(1f)) {
+                                Column(
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                        .fillMaxWidth(1f)
+                                ) {
                                     Text(
                                         text = friendList!![index].nickname
                                             ?: "Альтернативное имя не указано", color = Color.White
