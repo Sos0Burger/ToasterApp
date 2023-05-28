@@ -244,12 +244,13 @@ fun sendFiles(
 ) {
     val fileApi = FileApiImpl()
     val multipartFiles = ArrayList<MultipartBody.Part>()
+    val cR = context.contentResolver
     for (item in files) {
         multipartFiles.add(
             MultipartBody.Part.createFormData(
                 "attachment",
                 item.path,
-                InputStreamRequestBody("image/*".toMediaType(), context.contentResolver, item)
+                InputStreamRequestBody(cR.getType(item)!!.toMediaType(), context.contentResolver, item)
             )
         )
     }
@@ -267,7 +268,7 @@ fun sendFiles(
                         "server",
                         response.code().toString()
                     )
-                    Toast.makeText(context, response.code().toString(), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
 
                 }
             }
