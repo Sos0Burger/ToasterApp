@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.hasher.Hasher
-import com.messenger.messengerapp.infoMessage.InfoSnackBar
+import com.messenger.messengerapp.infomessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
 import kotlinx.coroutines.delay
 import org.json.JSONObject

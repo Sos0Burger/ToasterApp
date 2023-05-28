@@ -1,6 +1,8 @@
 package com.messenger.messengerapp.screen
 
+import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,23 +52,36 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.api.impl.FileApiImpl
+import com.messenger.messengerapp.dto.FileDTO
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.dto.MessageDTO
+import com.messenger.messengerapp.requestbody.InputStreamRequestBody
 import com.messenger.messengerapp.ui.theme.Orange
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatMessagesScreen(friendDTO: FriendDTO) {
-    var messages:MutableList<MessageDTO> = remember {
+    var messages: MutableList<MessageDTO> = remember {
         mutableListOf()
     }
 
 
-    var imageUri: MutableList<Uri> = remember {
+    var imageUris: MutableList<Uri> = remember {
         mutableListOf()
     }
     val imageCount = remember {
         mutableStateOf(0)
+    }
+    val uploadedImageIds: MutableList<Int> = remember {
+        mutableListOf()
     }
     val context = LocalContext.current
 
@@ -82,14 +97,12 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
         if (uris.size > 10) {
             Toast.makeText(context, "Максимум 10 изображений", Toast.LENGTH_SHORT).show()
         } else {
-            imageUri = uris.toMutableList()
+            imageUris = uris.toMutableList()
             imageCount.value = uris.size
         }
     }
 
-
     val scrollState = rememberScrollState(0)
-
 
 
 
@@ -117,8 +130,11 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                             .size(64.dp)
                             .clip(CircleShape)
                     )
-                    Column() {
-                        Text(text = friendDTO.nickname?:"Альтернативное имя не указано", fontSize = 20.sp)
+                    Column {
+                        Text(
+                            text = friendDTO.nickname ?: "Альтернативное имя не указано",
+                            fontSize = 20.sp
+                        )
                         Text(text = "ID: " + friendDTO.id.toString(), fontSize = 12.sp)
                     }
                 }
@@ -134,7 +150,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                 items(imageCount.value) { index ->
                     Button(
                         onClick = {
-                            imageUri.removeAt(index)
+                            imageUris.removeAt(index)
                             imageCount.value -= 1
                         },
                         contentPadding = PaddingValues(0.dp),
@@ -144,7 +160,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
                     ) {
                         Image(
-                            painter = rememberAsyncImagePainter(model = imageUri[index]),
+                            painter = rememberAsyncImagePainter(model = imageUris[index]),
                             contentDescription = null,
                             contentScale = ContentScale.Fit
                         )
@@ -190,7 +206,13 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                         .widthIn(max = 256.dp)
                 )
                 IconButton(
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                        sendFiles(
+                            imageUris,
+                            context,
+                            uploadedImageIds
+                        )
+                    },
                     colors = IconButtonDefaults.iconButtonColors(
                         contentColor = Orange,
                         disabledContentColor = Color.DarkGray
@@ -212,5 +234,48 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
 @Preview(showBackground = true)
 @Composable
 fun ChatMessagesScreenPreview() {
-    ChatMessagesScreen(FriendDTO(16, "Аноноимус228", null))
+    ChatMessagesScreen(FriendDTO(16, "Анонимус228", null))
+}
+
+fun sendFiles(
+    files: List<Uri>,
+    context: Context,
+    uploadedImageIds: MutableList<Int>
+) {
+    val fileApi = FileApiImpl()
+    val multipartFiles = ArrayList<MultipartBody.Part>()
+    for (item in files) {
+        multipartFiles.add(
+            MultipartBody.Part.createFormData(
+                "attachment",
+                item.path,
+                InputStreamRequestBody("image/*".toMediaType(), context.contentResolver, item)
+            )
+        )
+    }
+
+    for (item in multipartFiles) {
+        val response = fileApi.upload(item)
+
+        response.enqueue(object : Callback<FileDTO> {
+            override fun onResponse(call: Call<FileDTO>, response: Response<FileDTO>) {
+                if (response.code() == 201) {
+                    uploadedImageIds.add(response.body()!!.id)
+                } else {
+                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    Log.d(
+                        "server",
+                        response.code().toString()
+                    )
+                    Toast.makeText(context, response.code().toString(), Toast.LENGTH_SHORT).show()
+
+                }
+            }
+            override fun onFailure(call: Call<FileDTO>, t: Throwable) {
+                Log.d("server", t.message.toString())
+                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
 }

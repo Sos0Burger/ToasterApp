@@ -31,8 +31,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.accompanist.swiperefresh.SwipeRefresh
@@ -42,34 +40,14 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.FriendDTO
-import com.messenger.messengerapp.infoMessage.InfoSnackBar
+import com.messenger.messengerapp.infomessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import com.messenger.messengerapp.viewmodel.UpdateViewModel
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-
-class MyViewModel : ViewModel() {
-    private val _isRefreshing = MutableStateFlow(false)
-
-    val isRefreshing: StateFlow<Boolean>
-        get() = _isRefreshing.asStateFlow()
-
-    fun refresh(getFriends: () -> Unit) {
-        viewModelScope.launch {
-            _isRefreshing.emit(true)
-            delay(1000)
-            getFriends()
-            _isRefreshing.emit(false)
-        }
-    }
-}
 
 @Composable
 fun Chat() {
@@ -130,7 +108,7 @@ fun Chat() {
         })
     }
     getFriends()
-    val viewModel: MyViewModel = viewModel()
+    val viewModel: UpdateViewModel = viewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     Surface(
         modifier = Modifier

@@ -35,7 +35,7 @@ import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.UserDTO
 import com.messenger.messengerapp.hasher.Hasher
-import com.messenger.messengerapp.infoMessage.InfoSnackBar
+import com.messenger.messengerapp.infomessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
 import org.json.JSONObject
 import retrofit2.Call
