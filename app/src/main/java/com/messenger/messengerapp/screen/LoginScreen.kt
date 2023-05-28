@@ -232,17 +232,6 @@ fun LoginScreenButton(
 
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    Surface(
-        modifier = Modifier.fillMaxSize(), color = Color.Black
-    ) {
-        LoginScreen(false, {}, {})
-    }
-}
-
 @Composable
 fun BackToRegistration(inputEnabled: MutableState<Boolean>, onNavigateToRegistration: () -> Unit) {
     TextButton(
@@ -259,3 +248,13 @@ fun BackToRegistration(inputEnabled: MutableState<Boolean>, onNavigateToRegistra
         Text(text = "Зарегистрироваться")
     }
 }
+@Preview(showBackground = true)
+@Composable
+fun LoginScreenPreview() {
+    Surface(
+        modifier = Modifier.fillMaxSize(), color = Color.Black
+    ) {
+        LoginScreen(false, {}, {})
+    }
+}
+
