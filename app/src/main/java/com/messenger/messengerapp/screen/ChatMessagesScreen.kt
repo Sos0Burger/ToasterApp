@@ -51,11 +51,17 @@ import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.dto.FriendDTO
+import com.messenger.messengerapp.dto.MessageDTO
 import com.messenger.messengerapp.ui.theme.Orange
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatMessagesScreen(friendDTO: FriendDTO) {
+    var messages:MutableList<MessageDTO> = remember {
+        mutableListOf()
+    }
+
+
     var imageUri: MutableList<Uri> = remember {
         mutableListOf()
     }

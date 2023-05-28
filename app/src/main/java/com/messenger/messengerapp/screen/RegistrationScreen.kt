@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
-import com.messenger.messengerapp.dto.RequestUserDTO
+import com.messenger.messengerapp.dto.UserDTO
 import com.messenger.messengerapp.hasher.Hasher
 import com.messenger.messengerapp.infoMessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
@@ -293,7 +293,7 @@ fun RegistrationButton(
             val userApi = UserApiImpl()
             val response =
                 userApi.registration(
-                    RequestUserDTO(
+                    UserDTO(
                         email = email.value,
                         password = Hasher.hash(password.value)
                     )
