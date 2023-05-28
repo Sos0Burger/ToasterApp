@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -44,13 +46,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.ui.theme.Orange
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatMessagesScreen() {
+fun ChatMessagesScreen(friendDTO: FriendDTO) {
     var imageUri: MutableList<Uri> = remember {
         mutableListOf()
     }
@@ -90,6 +95,28 @@ fun ChatMessagesScreen() {
                 .padding(bottom = 8.dp)
                 .fillMaxSize(1f)
         ) {
+            Row(horizontalArrangement = Arrangement.SpaceAround) {
+                Button(
+                    onClick = { /*TODO*/ },
+                    shape = RectangleShape,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                ) {
+                    AsyncImage(
+                        model = friendDTO.image
+                            ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                    )
+                    Column() {
+                        Text(text = friendDTO.nickname?:"Альтернативное имя не указано", fontSize = 20.sp)
+                        Text(text = "ID: " + friendDTO.id.toString(), fontSize = 12.sp)
+                    }
+                }
+            }
             LazyColumn(modifier = Modifier.weight(1f)) {
 
                 //todo
@@ -179,5 +206,5 @@ fun ChatMessagesScreen() {
 @Preview(showBackground = true)
 @Composable
 fun ChatMessagesScreenPreview() {
-    ChatMessagesScreen()
+    ChatMessagesScreen(FriendDTO(16, "Аноноимус228", null))
 }
