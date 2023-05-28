@@ -136,7 +136,7 @@ fun LoginScreen(
                     call: Call<Any>, response: Response<Any>
                 ) {
                     if (response.code() == 200) {
-                        User.USER_ID = response.body() as? Int?
+                        User.USER_ID = (response.body() as? Double?)?.toInt()
                         onNavigateToMainScreen()
                     } else {
                         val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -184,7 +184,7 @@ fun LoginScreenButton(
                     call: Call<Any>, response: Response<Any>
                 ) {
                     if (response.code() == 200) {
-                        User.USER_ID = response.body() as? Int?
+                        User.USER_ID = (response.body() as? Double?)?.toInt()
                         User.EMAIL = email.value
                         User.HASH = Hasher.hash(password.value)
 

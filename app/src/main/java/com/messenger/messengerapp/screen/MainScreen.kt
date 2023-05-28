@@ -24,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.screen.mainSubscreen.Chat
 import com.messenger.messengerapp.screen.mainSubscreen.News
 
 @Composable
@@ -36,10 +37,13 @@ fun MainScreen() {
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         NavHost(
             navController = navController,
-            startDestination = "news"
+            startDestination = "chat"
         ) {
             composable("news") {
                 News()
+            }
+            composable("chat"){
+                Chat()
             }
         }
         Row(
