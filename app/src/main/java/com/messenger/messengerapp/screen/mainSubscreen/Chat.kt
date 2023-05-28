@@ -74,7 +74,7 @@ class MyViewModel : ViewModel() {
 @Composable
 fun Chat() {
     var friendList: MutableList<FriendDTO>? = null
-    val friendListState = remember {
+    val friendListNullOrEmptyState = remember {
         mutableStateOf(friendList.isNullOrEmpty())
     }
     val isFriendListNull = remember {
@@ -103,7 +103,7 @@ fun Chat() {
                 if (response.code() == 200) {
                     friendList = response.body()!!.toMutableList()
                     friendsCount.value = response.body()!!.size
-                    friendListState.value = friendList.isNullOrEmpty()
+                    friendListNullOrEmptyState.value = friendList.isNullOrEmpty()
                     isFriendListNull.value = friendList == null
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -111,6 +111,9 @@ fun Chat() {
                         "server",
                         response.code().toString() + " " + jsonObj.getString("message")
                     )
+                    isFriendListNull.value = true
+                    friendListNullOrEmptyState.value = true
+                    friendsCount.value = 0
                     errorMessage.value = jsonObj.getString("message")
                     snackBarState.value = true
                 }
@@ -118,6 +121,9 @@ fun Chat() {
 
             override fun onFailure(call: Call<List<FriendDTO>>, t: Throwable) {
                 Log.d("server", t.message.toString())
+                isFriendListNull.value = true
+                friendListNullOrEmptyState.value = true
+                friendsCount.value = 0
                 errorMessage.value = "Ошибка подключения"
                 snackBarState.value = true
             }
@@ -131,7 +137,7 @@ fun Chat() {
             .fillMaxSize()
             .padding(bottom = 58.dp), color = Color.Black
     ) {
-        if (friendListState.value) {
+        if (friendListNullOrEmptyState.value) {
             Column(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -145,7 +151,15 @@ fun Chat() {
                     Text(text = "У вас нет друзей", color = Orange, fontSize = 20.sp)
                 }
             }
-
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                if (snackBarState.value) {
+                    InfoSnackBar(text = errorMessage, snackBarState = snackBarState)
+                }
+            }
         } else {
             SwipeRefresh(
                 state = rememberSwipeRefreshState(isRefreshing),
@@ -199,15 +213,6 @@ fun Chat() {
                     }
                 }
             }
-        }
-    }
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.padding(bottom = 16.dp)
-    ) {
-        if (snackBarState.value) {
-            InfoSnackBar(text = errorMessage, snackBarState = snackBarState)
         }
     }
 
