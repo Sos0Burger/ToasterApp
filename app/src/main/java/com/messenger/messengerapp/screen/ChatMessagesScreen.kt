@@ -104,8 +104,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
 
     val scrollState = rememberScrollState(0)
 
-
-
     Surface(
         modifier = Modifier.fillMaxSize(), color = Color.Black
     ) {
@@ -139,8 +137,8 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                     }
                 }
             }
-            LazyColumn(modifier = Modifier.weight(1f)) {
 
+            LazyColumn(modifier = Modifier.weight(1f)) {
                 //todo
             }
             LazyRow(
