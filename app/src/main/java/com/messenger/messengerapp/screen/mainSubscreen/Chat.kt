@@ -14,12 +14,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,16 +52,17 @@ import retrofit2.Response
 
 
 @Composable
-fun Chat() {
-    var friendList: MutableList<FriendDTO>? = null
-    val friendListNullOrEmptyState = remember {
-        mutableStateOf(friendList.isNullOrEmpty())
+fun Chat(friendDTOShare: MutableState<FriendDTO>, onChatMessages: () -> Unit) {
+    val friendList = remember {
+        mutableStateListOf<FriendDTO>()
     }
-    val isFriendListNull = remember {
-        mutableStateOf(true)
+    val isFriendListEmpty = remember {
+        mutableStateOf(false)
     }
     val friendsCount = remember {
-        mutableStateOf(0)
+        derivedStateOf {
+            friendList.size
+        }
     }
 
     val errorMessage = remember {
@@ -71,6 +74,7 @@ fun Chat() {
     }
 
     fun getFriends() {
+        friendList.clear()
         val userApi = UserApiImpl()
         val response = userApi.getFriends(User.USER_ID!!)
         response.enqueue(object : Callback<List<FriendDTO>> {
@@ -79,19 +83,14 @@ fun Chat() {
                 response: Response<List<FriendDTO>>
             ) {
                 if (response.code() == 200) {
-                    friendList = response.body()!!.toMutableList()
-                    friendsCount.value = response.body()!!.size
-                    friendListNullOrEmptyState.value = friendList.isNullOrEmpty()
-                    isFriendListNull.value = friendList == null
+                    friendList.addAll(response.body()!!.toMutableList())
+                    if(friendList.isEmpty())isFriendListEmpty.value = true
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                     Log.d(
                         "server",
                         response.code().toString() + " " + jsonObj.getString("message")
                     )
-                    isFriendListNull.value = true
-                    friendListNullOrEmptyState.value = true
-                    friendsCount.value = 0
                     errorMessage.value = jsonObj.getString("message")
                     snackBarState.value = true
                 }
@@ -99,35 +98,26 @@ fun Chat() {
 
             override fun onFailure(call: Call<List<FriendDTO>>, t: Throwable) {
                 Log.d("server", t.message.toString())
-                isFriendListNull.value = true
-                friendListNullOrEmptyState.value = true
-                friendsCount.value = 0
                 errorMessage.value = "Ошибка подключения"
                 snackBarState.value = true
             }
         })
     }
-    getFriends()
+
     val viewModel: UpdateViewModel = viewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    viewModel.refresh { getFriends() }
     Surface(
         modifier = Modifier
             .fillMaxSize()
             .padding(bottom = 58.dp), color = Color.Black
     ) {
-        if (friendListNullOrEmptyState.value) {
+        if (isFriendListEmpty.value) {
             Column(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (isFriendListNull.value) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(64.dp, 64.dp),
-                        color = Orange
-                    )
-                } else {
-                    Text(text = "У вас нет друзей", color = Orange, fontSize = 20.sp)
-                }
+                Text(text = "У вас нет друзей", color = Orange, fontSize = 20.sp)
             }
             Row(
                 verticalAlignment = Alignment.Bottom,
@@ -157,7 +147,10 @@ fun Chat() {
                     items(count = friendsCount.value) { index ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Button(
-                                onClick = { /*TODO*/ },
+                                onClick = {
+                                    friendDTOShare.value = friendList!![index]
+                                    onChatMessages()
+                                },
                                 shape = RectangleShape,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
@@ -199,5 +192,5 @@ fun Chat() {
 @Preview(showBackground = true)
 @Composable
 fun ChatPreview() {
-    Chat()
+    Chat(remember { mutableStateOf(FriendDTO(-1, null, null)) }) {}
 }

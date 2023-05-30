@@ -1,3 +1,5 @@
+
+
 package com.messenger.messengerapp.screen
 
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +15,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,11 +28,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.screen.mainSubscreen.Chat
 import com.messenger.messengerapp.screen.mainSubscreen.News
 
 @Composable
 fun MainScreen() {
+    val friendDTOShare = remember {
+        mutableStateOf(FriendDTO(-1, null, null))
+    }
     val iconButtonModifier = Modifier
         .height(48.dp)
         .width(48.dp)
@@ -43,7 +51,12 @@ fun MainScreen() {
                 News()
             }
             composable("chat"){
-                Chat()
+                Chat(friendDTOShare){
+                    navController.navigate("chatMessages")
+                }
+            }
+            composable("chatMessages"){
+                ChatMessagesScreen(friendDTO = friendDTOShare.value)
             }
         }
         Row(

@@ -17,7 +17,7 @@ class UpdateViewModel : ViewModel() {
     fun refresh(onUpdate: () -> Unit) {
         viewModelScope.launch {
             _isRefreshing.emit(true)
-            delay(1000)
+            delay(500)
             onUpdate()
             _isRefreshing.emit(false)
         }
