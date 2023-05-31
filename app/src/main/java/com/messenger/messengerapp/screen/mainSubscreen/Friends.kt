@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,9 +23,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -75,6 +79,18 @@ fun Friends() {
     val friendList = remember {
         mutableStateListOf<FriendDTO>()
     }
+    val friendPendingList = remember {
+        mutableStateListOf<FriendDTO>()
+    }
+    val friendSentList = remember {
+        mutableStateListOf<FriendDTO>()
+    }
+    val isFriendPendingListEmpty = remember {
+        mutableStateOf(false)
+    }
+    val isFriendSentListEmpty = remember {
+        mutableStateOf(false)
+    }
     val isFriendListEmpty = remember {
         mutableStateOf(false)
     }
@@ -84,7 +100,17 @@ fun Friends() {
             friendList.size
         }
     }
-    val clickedItem = remember{
+    val friendsPendingCount = remember {
+        derivedStateOf {
+            friendPendingList.size
+        }
+    }
+    val friendsSentCount = remember {
+        derivedStateOf {
+            friendSentList.size
+        }
+    }
+    val clickedItem = remember {
         mutableStateOf(-1)
     }
 
@@ -96,12 +122,12 @@ fun Friends() {
         mutableStateOf(false)
     }
     val pageState = rememberPagerState()
+
     val coroutineScope = rememberCoroutineScope()
     val buttonColors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
     val context = LocalContext.current
 
     fun getFriends() {
-        friendList.clear()
         val userApi = UserApiImpl()
         val response =
             when (pageState.currentPage) {
@@ -109,6 +135,7 @@ fun Friends() {
                 1 -> userApi.getPending(
                     User.USER_ID!!
                 )
+
                 else -> userApi.getFriends(User.USER_ID!!)
             }
         response.enqueue(object : Callback<List<FriendDTO>> {
@@ -117,8 +144,26 @@ fun Friends() {
                 response: Response<List<FriendDTO>>
             ) {
                 if (response.code() == 200) {
-                    friendList.addAll(response.body()!!.toMutableList())
-                    if (friendList.isEmpty()) isFriendListEmpty.value = true
+                    when (pageState.currentPage) {
+                        2 -> {
+                            friendSentList.clear()
+                            friendSentList.addAll(response.body()!!)
+                            isFriendSentListEmpty.value = friendSentList.isEmpty()
+                        }
+
+                        1 -> {
+                            friendPendingList.clear()
+                            friendPendingList.addAll(response.body()!!)
+                            isFriendPendingListEmpty.value = friendPendingList.isEmpty()
+                        }
+
+                        else -> {
+                            friendList.clear()
+                            friendList.addAll(response.body()!!)
+                            isFriendListEmpty.value = friendList.isEmpty()
+                        }
+                    }
+
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                     Log.d(
@@ -169,7 +214,7 @@ fun Friends() {
         })
     }
 
-    fun acceptFriendRequest(){
+    fun acceptFriendRequest() {
         val userApi = UserApiImpl()
         val response = userApi.acceptFriendRequest(User.USER_ID!!, friendList[clickedItem.value].id)
         response.enqueue(object : Callback<Unit> {
@@ -198,109 +243,56 @@ fun Friends() {
 
         })
     }
-
-    getFriends()
+    if (pageState.currentPage <= 2) {
+        getFriends()
+    }
 
     Surface(
         modifier = Modifier
             .fillMaxSize()
             .padding(bottom = 58.dp), color = Color.Black
     ) {
-        Row(
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceAround,
-            modifier = Modifier.fillMaxWidth(1f)
-        ) {
-            Button(
-                onClick = { coroutineScope.launch { pageState.scrollToPage(0) } },
-                colors = buttonColors
+        Column(modifier = Modifier.fillMaxSize(1f)) {
+            Row(
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.SpaceAround,
+                modifier = Modifier.fillMaxWidth(1f)
             ) {
-                Text(
-                    text = "Друзья",
-                    color = if (pageState.currentPage == 0) Orange else Color.DarkGray
-                )
-            }
-            Button(
-                onClick = { coroutineScope.launch { pageState.scrollToPage(1) } },
-                colors = buttonColors
-            ) {
-                Text(
-                    text = "Входящие заявки",
-                    color = if (pageState.currentPage == 1) Orange else Color.DarkGray
-                )
-            }
-            Button(
-                onClick = { coroutineScope.launch { pageState.scrollToPage(2) } },
-                colors = buttonColors
-            ) {
-                Text(
-                    text = "Исходящие",
-                    color = if (pageState.currentPage == 2) Orange else Color.DarkGray
-                )
-            }
-        }
-        HorizontalPager(
-            pageCount = 3,
-            state = pageState,
-            modifier = Modifier.fillMaxSize(1f)
-        ) { page ->
-            when (page) {
-                0 -> {
-                    FriendList(
-                        friendList = friendList,
-                        friendsCount = friendsCount,
-                        isFriendListEmpty = isFriendListEmpty,
-                        snackBarState = snackBarState,
-                        errorMessage = errorMessage,
-                        clickedItem = clickedItem,
-                        getFriends = { getFriends() }) {
-                        //todo пока ничего
-
-                    }
+                Button(
+                    onClick = { coroutineScope.launch { pageState.scrollToPage(0) } },
+                    colors = buttonColors
+                ) {
+                    Text(
+                        text = "Друзья",
+                        color = if (pageState.currentPage == 0) Orange else Color.DarkGray
+                    )
                 }
-
-                1 -> {
-                    FriendList(
-                        friendList = friendList,
-                        friendsCount = friendsCount,
-                        isFriendListEmpty = isFriendListEmpty,
-                        snackBarState = snackBarState,
-                        errorMessage = errorMessage,
-                        clickedItem = clickedItem,
-                        getFriends = { getFriends() }) {
-                        acceptFriendRequest()
-                    }
+                Button(
+                    onClick = { coroutineScope.launch { pageState.scrollToPage(1) } },
+                    colors = buttonColors
+                ) {
+                    Text(
+                        text = "Входящие",
+                        color = if (pageState.currentPage == 1) Orange else Color.DarkGray
+                    )
                 }
-
-                2 -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize(1f)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.End,
-                            modifier = Modifier.fillMaxWidth(1f)
-                        ) {
-                            TextField(
-                                value = friendId.value,
-                                onValueChange = { friendId.value = it },
-                                placeholder = {
-                                    Text(
-                                        text = "Введите ID друга, чтобы добавить его в друзья"
-                                    )
-                                })
-                            Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                            IconButton(onClick = {
-                                sendFriendRequest()
-                            }, enabled = friendId.value.toIntOrNull() != null) {
-                                Icon(
-                                    painter = painterResource(R.drawable.send_icon),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                )
-                            }
-                        }
+                Button(
+                    onClick = { coroutineScope.launch { pageState.scrollToPage(2) } },
+                    colors = buttonColors
+                ) {
+                    Text(
+                        text = "Исходящие",
+                        color = if (pageState.currentPage == 2) Orange else Color.DarkGray
+                    )
+                }
+            }
+            HorizontalPager(
+                pageCount = 3,
+                state = pageState,
+                modifier = Modifier.fillMaxSize(1f)
+            ) { page ->
+                when (page) {
+                    0 -> {
                         FriendList(
                             friendList = friendList,
                             friendsCount = friendsCount,
@@ -309,7 +301,85 @@ fun Friends() {
                             errorMessage = errorMessage,
                             clickedItem = clickedItem,
                             getFriends = { getFriends() }) {
-                            //Todo отменить заявку
+                            //todo пока ничего
+
+                        }
+                    }
+
+                    1 -> {
+                        FriendList(
+                            friendList = friendPendingList,
+                            friendsCount = friendsPendingCount,
+                            isFriendListEmpty = isFriendPendingListEmpty,
+                            snackBarState = snackBarState,
+                            errorMessage = errorMessage,
+                            clickedItem = clickedItem,
+                            getFriends = { getFriends() }) {
+                            acceptFriendRequest()
+                        }
+                    }
+
+                    2 -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize(1f)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.End,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                TextField(
+                                    value = friendId.value,
+                                    singleLine = true,
+                                    modifier = Modifier.height(48.dp),
+                                    colors = TextFieldDefaults.textFieldColors(
+                                        containerColor = Color.DarkGray,
+                                        textColor = Color.White,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent
+                                    ),
+                                    shape = MaterialTheme.shapes.medium,
+                                    onValueChange = { friendId.value = it })
+                                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                                IconButton(
+                                    onClick = {
+                                        sendFriendRequest()
+                                    }, enabled = friendId.value.toIntOrNull() != null,
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = Color.Transparent,
+                                        contentColor = Orange,
+                                        disabledContentColor = Color.DarkGray
+                                    )
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.send_icon),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(32.dp),
+                                    )
+                                }
+                            }
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxWidth(1f)
+                            ) {
+                                Text(
+                                    text = "Введите ID друга, чтобы добавить его!",
+                                    color = Color.White
+                                )
+                            }
+
+                            FriendList(
+                                friendList = friendSentList,
+                                friendsCount = friendsSentCount,
+                                isFriendListEmpty = isFriendSentListEmpty,
+                                snackBarState = snackBarState,
+                                errorMessage = errorMessage,
+                                clickedItem = clickedItem,
+                                getFriends = { getFriends() }) {
+                                //Todo отменить заявку
+                            }
                         }
                     }
                 }
@@ -326,13 +396,12 @@ fun FriendList(
     isFriendListEmpty: MutableState<Boolean>,
     snackBarState: MutableState<Boolean>,
     errorMessage: MutableState<String>,
-    clickedItem:MutableState<Int>,
+    clickedItem: MutableState<Int>,
     getFriends: () -> Unit,
     onClick: () -> Unit
 ) {
     val viewModel: UpdateViewModel = viewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    viewModel.refresh { getFriends() }
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -343,7 +412,7 @@ fun FriendList(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "У вас нет друзей", color = Orange, fontSize = 20.sp)
+                Text(text = "Здесь пока пусто...", color = Orange, fontSize = 20.sp)
             }
             Row(
                 verticalAlignment = Alignment.Bottom,
