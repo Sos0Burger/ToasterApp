@@ -42,7 +42,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -61,13 +60,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
-import com.google.accompanist.swiperefresh.SwipeRefreshState
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.MessageApiImpl
@@ -80,7 +74,6 @@ import com.messenger.messengerapp.dto.ResponseMessageDTO
 import com.messenger.messengerapp.requestbody.InputStreamRequestBody
 import com.messenger.messengerapp.ui.theme.Graphite
 import com.messenger.messengerapp.ui.theme.Orange
-import com.messenger.messengerapp.viewmodel.UpdateViewModel
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import org.json.JSONObject
@@ -134,7 +127,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     val messageScrollState = rememberLazyListState()
     val endReached by remember {
         derivedStateOf {
-            !messageScrollState.canScrollForward && (messages.size >= messagePage.value * 30)
+            !messageScrollState.canScrollForward && (messages.size >= messagePage.value * 15)
         }
     }
     val filesSend by remember {
@@ -145,8 +138,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     val inputEnabled = remember {
         mutableStateOf(true)
     }
-    val viewModel: UpdateViewModel = viewModel()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
     val messageCount = remember {
         derivedStateOf {
             messages.size
@@ -268,76 +259,66 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                             fontSize = 20.sp,
                             color = Color.White
                         )
-                        Text(text = "ID: " + friendDTO.id.toString(), fontSize = 12.sp, color = Color.White)
+                        Text(
+                            text = "ID: " + friendDTO.id.toString(),
+                            fontSize = 12.sp,
+                            color = Color.White
+                        )
                     }
                 }
             }
 
-            SwipeRefresh(
-                state = rememberSwipeRefreshState(isRefreshing),
+            LazyColumn(
                 modifier = Modifier.weight(1f),
-                onRefresh = {
-                    viewModel.refresh {
-                        messagePage.value = 0
-                    }
-                },
-                indicator = { state: SwipeRefreshState, trigger ->
-                    SwipeRefreshIndicator(
-                        state = state,
-                        refreshTriggerDistance = trigger,
-                        scale = true,
-                        backgroundColor = Color.DarkGray,
-                        contentColor = Orange,
-                        shape = CircleShape
-                    )
-                }
+                reverseLayout = true,
+                state = messageScrollState
             ) {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    reverseLayout = true,
-                    state = messageScrollState
-                ) {
-                    items(count = messageCount.value) { index ->
-                        Row(
-                            horizontalArrangement = if (messages[index].sender.id == User.USER_ID) Arrangement.End else Arrangement.Start,
-                            modifier = Modifier.fillMaxWidth(1f)
+                items(count = messageCount.value) { index ->
+                    Row(
+                        horizontalArrangement = if (messages[index].sender.id == User.USER_ID) Arrangement.End else Arrangement.Start,
+                        modifier = Modifier.fillMaxWidth(1f)
+                    ) {
+                        Card(
+                            shape = MaterialTheme.shapes.medium,
+                            colors = CardDefaults.cardColors(containerColor = if (messages[index].sender.id == User.USER_ID) Color.DarkGray else Graphite),
+                            modifier = Modifier
+                                .padding(
+                                    if (messages[index].sender.id == User.USER_ID) PaddingValues(
+                                        start = 64.dp,
+                                        end = 8.dp,
+                                        top = 8.dp,
+                                        bottom = 8.dp
+                                    ) else PaddingValues(
+                                        start = 8.dp,
+                                        end = 64.dp,
+                                        top = 8.dp,
+                                        bottom = 8.dp
+                                    )
+                                )
                         ) {
-                            Card(
-                                shape = MaterialTheme.shapes.medium,
-                                colors = CardDefaults.cardColors(containerColor = if (messages[index].sender.id == User.USER_ID) Color.DarkGray else Graphite),
-                                modifier = Modifier
-                                    .padding(
-                                        if (messages[index].sender.id == User.USER_ID) PaddingValues(
-                                            start = 64.dp,
-                                            end = 8.dp,
-                                            top = 8.dp,
-                                            bottom = 8.dp
-                                        ) else PaddingValues(
-                                            start = 8.dp,
-                                            end = 64.dp,
-                                            top = 8.dp,
-                                            bottom = 8.dp
-                                        )
-                                    )
-                            ) {
-                                Text(text = messages[index].text ?: "", color = Color.White, modifier = Modifier.padding(horizontal = 4.dp), fontSize = 16.sp)
-                                HorizontalPager(pageCount = messages[index].attachments.size) { page ->
-                                    AsyncImage(
-                                        model = messages[index].attachments[page].URL,
-                                        contentDescription = null
-                                    )
-                                }
-                                Text(
-                                    text = TimeConverter.longToLocalTime(messages[index].date),
-                                    textAlign = TextAlign.End,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(all = 4.dp),
-                                    color = Color.White
+                            Text(
+                                text = messages[index].text ?: "",
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                                fontSize = 16.sp
+                            )
+                            HorizontalPager(pageCount = messages[index].attachments.size) { page ->
+                                AsyncImage(
+                                    model = messages[index].attachments[page].url,
+                                    contentDescription = null
                                 )
                             }
+                            Text(
+                                text = TimeConverter.longToLocalTime(messages[index].date),
+                                textAlign = TextAlign.End,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(all = 4.dp),
+                                color = Color.White
+                            )
                         }
                     }
                 }
+
             }
 
 
@@ -428,8 +409,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
             }
         }
     }
-
-//    getMessages(messagePage.value)
 
     if (endReached) {
         LaunchedEffect(Unit) {

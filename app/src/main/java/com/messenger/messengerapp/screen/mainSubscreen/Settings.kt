@@ -49,17 +49,22 @@ fun Settings() {
         imageUri.value = uri ?: Uri.EMPTY
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            IconButton(onClick = { launcher.launch("image/*") },
+            IconButton(
+                onClick = { launcher.launch("image/*") },
                 modifier = Modifier.fillMaxWidth(),
-                colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent)) {
+                colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent)
+            ) {
                 AsyncImage(
-                    model = if (imageUri.value != Uri.EMPTY) userSettings.value.image
-                        ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg" else imageUri,
+                    model =
+                    if (imageUri.value == Uri.EMPTY)
+                        userSettings.value.image?:"https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                    else
+                        imageUri.value,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
