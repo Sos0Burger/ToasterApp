@@ -84,7 +84,7 @@ fun Friends() {
             friendList.size
         }
     }
-    val clickedItem = remember(){
+    val clickedItem = remember{
         mutableStateOf(-1)
     }
 
@@ -104,9 +104,13 @@ fun Friends() {
         friendList.clear()
         val userApi = UserApiImpl()
         val response =
-            if (pageState.currentPage == 2) userApi.getSent(User.USER_ID!!) else if (pageState.currentPage == 1) userApi.getPending(
-                User.USER_ID!!
-            ) else userApi.getFriends(User.USER_ID!!)
+            when (pageState.currentPage) {
+                2 -> userApi.getSent(User.USER_ID!!)
+                1 -> userApi.getPending(
+                    User.USER_ID!!
+                )
+                else -> userApi.getFriends(User.USER_ID!!)
+            }
         response.enqueue(object : Callback<List<FriendDTO>> {
             override fun onResponse(
                 call: Call<List<FriendDTO>>,
