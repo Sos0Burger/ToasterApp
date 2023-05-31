@@ -30,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.screen.mainSubscreen.Chat
+import com.messenger.messengerapp.screen.mainSubscreen.Friends
 import com.messenger.messengerapp.screen.mainSubscreen.News
 
 @Composable
@@ -45,7 +46,7 @@ fun MainScreen() {
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         NavHost(
             navController = navController,
-            startDestination = "chat"
+            startDestination = "news"
         ) {
             composable("news") {
                 News()
@@ -58,6 +59,9 @@ fun MainScreen() {
             composable("chatMessages"){
                 ChatMessagesScreen(friendDTO = friendDTOShare.value)
             }
+            composable("friends"){
+                Friends()
+            }
         }
         Row(
             verticalAlignment = Alignment.Bottom,
@@ -65,7 +69,7 @@ fun MainScreen() {
             modifier = Modifier.padding(bottom = 8.dp)
         ) {
             IconButton(
-                onClick = { /*TODO*/ },
+                onClick = { navController.navigate("news") },
                 colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
                 modifier = iconButtonModifier
             ) {
@@ -82,7 +86,7 @@ fun MainScreen() {
                 )
             }
             IconButton(
-                onClick = { /*TODO*/ },
+                onClick = { navController.navigate("chat") },
                 colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
                 modifier = iconButtonModifier
             ) {
@@ -95,7 +99,7 @@ fun MainScreen() {
                 Text(text = "Чат", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
             }
             IconButton(
-                onClick = { /*TODO*/ },
+                onClick = { navController.navigate("friends") },
                 colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
                 modifier = iconButtonModifier
             ) {
