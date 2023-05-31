@@ -148,7 +148,7 @@ fun Chat(friendDTOShare: MutableState<FriendDTO>, onChatMessages: () -> Unit) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Button(
                                 onClick = {
-                                    friendDTOShare.value = friendList!![index]
+                                    friendDTOShare.value = friendList[index]
                                     onChatMessages()
                                 },
                                 shape = RectangleShape,
@@ -156,7 +156,7 @@ fun Chat(friendDTOShare: MutableState<FriendDTO>, onChatMessages: () -> Unit) {
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
                             ) {
                                 AsyncImage(
-                                    model = friendList!![index].image
+                                    model = friendList[index].image
                                         ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
@@ -170,11 +170,11 @@ fun Chat(friendDTOShare: MutableState<FriendDTO>, onChatMessages: () -> Unit) {
                                         .fillMaxWidth(1f)
                                 ) {
                                     Text(
-                                        text = friendList!![index].nickname
+                                        text = friendList[index].nickname
                                             ?: "Альтернативное имя не указано", color = Color.White
                                     )
                                     Text(
-                                        text = "ID: " + friendList!![index].id.toString(),
+                                        text = "ID: " + friendList[index].id.toString(),
                                         fontSize = 10.sp,
                                         color = Color.White
                                     )

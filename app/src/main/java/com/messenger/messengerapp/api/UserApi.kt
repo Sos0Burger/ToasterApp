@@ -19,4 +19,17 @@ interface UserApi {
 
     @GET("user/{id}/friends")
     fun getFriends(@Path(value = "id") id:Int): Call<List<FriendDTO>>
+
+    @POST("user/friend-request/{senderid}/{receiverid}")
+    fun sendFriendRequest(@Path("senderid") senderid:Int, @Path("receiverid") receiverid:Int) : Call<FriendDTO>
+
+    @GET("/user/{id}/pending")
+    fun getPending(@Path("id") id:Int):Call<List<FriendDTO>>
+
+    @GET("/user/{id}/sent")
+    fun getSent(@Path("id") id:Int):Call<List<FriendDTO>>
+
+    @POST("user//friends/{receiverid}/{senderid}")
+    fun acceptFriendRequest(@Path("receiverid") receiverid: Int, @Path("senderid") senderid: Int) : Call<Unit>
+
 }

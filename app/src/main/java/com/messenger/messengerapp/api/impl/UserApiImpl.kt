@@ -20,4 +20,20 @@ class UserApiImpl:UserApi {
     override fun getFriends(id: Int): Call<List<FriendDTO>> {
         return userApi.getFriends(id)
     }
+
+    override fun sendFriendRequest(senderid: Int, receiverid: Int): Call<FriendDTO> {
+        return userApi.sendFriendRequest(senderid, receiverid)
+    }
+
+    override fun getPending(id: Int): Call<List<FriendDTO>> {
+        return userApi.getPending(id)
+    }
+
+    override fun getSent(id: Int): Call<List<FriendDTO>> {
+        return userApi.getSent(id)
+    }
+
+    override fun acceptFriendRequest(receiverid: Int, senderid: Int): Call<Unit> {
+        return userApi.acceptFriendRequest(receiverid, senderid)
+    }
 }
