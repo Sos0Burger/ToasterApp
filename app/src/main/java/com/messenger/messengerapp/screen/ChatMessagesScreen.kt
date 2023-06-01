@@ -1,4 +1,4 @@
-@file:Suppress("DEPRECATION")
+
 
 package com.messenger.messengerapp.screen
 
@@ -195,7 +195,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                             )
                         )
                     }
-                    messages.add(
+                    messages.add(0,
                         ResponseMessageDTO(
                             text = message.value,
                             sender = FriendDTO(User.USER_ID!!, null, null),

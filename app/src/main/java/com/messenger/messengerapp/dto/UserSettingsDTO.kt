@@ -1,4 +1,4 @@
 package com.messenger.messengerapp.dto
 
 
-class UserSettingsDTO( val id: Int, val email: String, val nickName: String?, val image: String?)
+class UserSettingsDTO( val id: Int, var email: String, var nickName: String?, var image: String?)

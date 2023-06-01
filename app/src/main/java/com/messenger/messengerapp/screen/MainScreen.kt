@@ -1,5 +1,3 @@
-
-
 package com.messenger.messengerapp.screen
 
 import androidx.compose.foundation.layout.Arrangement
@@ -32,11 +30,16 @@ import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.screen.mainSubscreen.Chat
 import com.messenger.messengerapp.screen.mainSubscreen.Friends
 import com.messenger.messengerapp.screen.mainSubscreen.News
+import com.messenger.messengerapp.screen.mainSubscreen.Settings
+import com.messenger.messengerapp.ui.theme.Orange
 
 @Composable
 fun MainScreen() {
     val friendDTOShare = remember {
         mutableStateOf(FriendDTO(-1, null, null))
+    }
+    val currentScreen = remember {
+        mutableStateOf("news")
     }
     val iconButtonModifier = Modifier
         .height(48.dp)
@@ -51,16 +54,22 @@ fun MainScreen() {
             composable("news") {
                 News()
             }
-            composable("chat"){
-                Chat(friendDTOShare){
+            composable("chat") {
+                Chat(friendDTOShare) {
                     navController.navigate("chatMessages")
                 }
             }
-            composable("chatMessages"){
+            composable("chatMessages") {
                 ChatMessagesScreen(friendDTO = friendDTOShare.value)
             }
-            composable("friends"){
+            composable("friends") {
                 Friends()
+            }
+            composable("profile") {
+                News()
+            }
+            composable("settings") {
+                Settings()
             }
         }
         Row(
@@ -69,8 +78,17 @@ fun MainScreen() {
             modifier = Modifier.padding(bottom = 8.dp)
         ) {
             IconButton(
-                onClick = { navController.navigate("news") },
-                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                onClick = {
+                    currentScreen.value = "news"
+                    navController.navigate("news")
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor =
+                    if (currentScreen.value == "news")
+                        Orange
+                    else
+                        Color.DarkGray
+                ),
                 modifier = iconButtonModifier
             ) {
                 Icon(
@@ -86,8 +104,17 @@ fun MainScreen() {
                 )
             }
             IconButton(
-                onClick = { navController.navigate("chat") },
-                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                onClick = {
+                    currentScreen.value = "chat"
+                    navController.navigate("chat")
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor =
+                    if (currentScreen.value == "chat")
+                        Orange
+                    else
+                        Color.DarkGray
+                ),
                 modifier = iconButtonModifier
             ) {
                 Icon(
@@ -99,8 +126,17 @@ fun MainScreen() {
                 Text(text = "Чат", fontSize = 10.sp, modifier = Modifier.padding(top = 34.dp))
             }
             IconButton(
-                onClick = { navController.navigate("friends") },
-                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                onClick = {
+                    currentScreen.value = "friends"
+                    navController.navigate("friends")
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor =
+                    if (currentScreen.value == "friends")
+                        Orange
+                    else
+                        Color.DarkGray
+                ),
                 modifier = iconButtonModifier
             ) {
                 Icon(
@@ -115,8 +151,17 @@ fun MainScreen() {
                 )
             }
             IconButton(
-                onClick = { /*TODO*/ },
-                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.DarkGray),
+                onClick = {
+                    currentScreen.value = "profile"
+                    /*TODO*/
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor =
+                    if (currentScreen.value == "profile")
+                        Orange
+                    else
+                        Color.DarkGray
+                ),
                 modifier = iconButtonModifier
             ) {
                 Icon(
@@ -126,6 +171,32 @@ fun MainScreen() {
                 )
                 Text(
                     text = "Профиль",
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(top = 34.dp)
+                )
+            }
+            IconButton(
+                onClick = {
+                    currentScreen.value = "settings"
+                    navController.navigate("settings")
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    contentColor =
+                    if (currentScreen.value == "settings")
+                        Orange
+                    else
+                        Color.DarkGray
+                ),
+                modifier = iconButtonModifier
+            ) {
+
+                Icon(
+                    painter = painterResource(id = R.drawable.settings_icon),
+                    contentDescription = null,
+                    modifier = iconTextModifier
+                )
+                Text(
+                    text = "Опции",
                     fontSize = 10.sp,
                     modifier = Modifier.padding(top = 34.dp)
                 )

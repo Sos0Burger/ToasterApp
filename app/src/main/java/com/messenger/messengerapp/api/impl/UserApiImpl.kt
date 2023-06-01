@@ -5,6 +5,7 @@ import com.messenger.messengerapp.api.UserApi
 import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.dto.UserDTO
+import com.messenger.messengerapp.dto.UserSettingsDTO
 import retrofit2.Call
 
 private val userApi = RetrofitClient.getInstance().create(UserApi::class.java)
@@ -44,5 +45,9 @@ class UserApiImpl:UserApi {
 
     override fun updateNickname(id: Int, auth: AuthDTO, nickname: String): Call<Unit> {
         return userApi.updateNickname(id, auth, nickname)
+    }
+
+    override fun getSettings(id: Int): Call<UserSettingsDTO> {
+        return userApi.getSettings(id)
     }
 }
