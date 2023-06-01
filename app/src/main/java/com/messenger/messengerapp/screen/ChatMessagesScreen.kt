@@ -1,5 +1,3 @@
-
-
 package com.messenger.messengerapp.screen
 
 import android.content.Context
@@ -63,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.api.RetrofitClient
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.MessageApiImpl
 import com.messenger.messengerapp.converter.TimeConverter
@@ -89,7 +88,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     val messages: MutableList<ResponseMessageDTO> = remember {
         mutableStateListOf()
     }
-
 
     val imageUris: MutableList<Uri> = remember {
         mutableStateListOf()
@@ -190,12 +188,16 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                     for (item in uploadedImageIds) {
                         fileDTOs.add(
                             FileDTO(
-                                -1, "вот очень не продумано",
-                                "192.168.1.178:8080/file/$item", "очень нехорошо", 1337
+                                -1,
+                                "вот очень не продумано",
+                                RetrofitClient.getInstance().baseUrl().toString() + "/file/$item",
+                                "очень нехорошо",
+                                1337
                             )
                         )
                     }
-                    messages.add(0,
+                    messages.add(
+                        0,
                         ResponseMessageDTO(
                             text = message.value,
                             sender = FriendDTO(User.USER_ID!!, null, null),
@@ -208,7 +210,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                     message.value = ""
                     imageUris.clear()
                     uploadedImageIds.clear()
-
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                     Log.d(
