@@ -19,6 +19,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -44,26 +45,28 @@ import com.messenger.messengerapp.ui.theme.Orange
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
-     val requestPermissionLauncher = rememberLauncherForActivityResult(
+    val requestPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { isGranted: Boolean ->
         if (isGranted) {
-           Toast.makeText(context, "Харош", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Харош", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(context, "Даууун", Toast.LENGTH_SHORT).show()
         }
     }
-    fun askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-            ) {
-            }  else {
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+        } else {
+            SideEffect {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
-    askNotificationPermission()
+
+
     val friendDTOShare = remember {
         mutableStateOf(FriendDTO(-1, null, null))
     }

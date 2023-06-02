@@ -317,6 +317,10 @@ fun RegistrationButton(
                             response.code().toString() + " " + jsonObj.getString("message")
                         )
                         errorMessage.value = jsonObj.getString("message")
+                        snackBarState.value = true
+                        clicked.value = false
+                        enabled.value = true
+                        inputEnabled.value = true
                     }
                 }
 

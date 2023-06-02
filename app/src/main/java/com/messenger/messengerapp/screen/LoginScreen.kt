@@ -24,6 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
+import com.messenger.messengerapp.FirebaseService
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.hasher.Hasher
@@ -136,6 +140,19 @@ fun LoginScreen(
                     call: Call<Any>, response: Response<Any>
                 ) {
                     if (response.code() == 200) {
+                        FirebaseMessaging.getInstance().token.addOnCompleteListener(
+                            OnCompleteListener { task ->
+                                if (!task.isSuccessful) {
+                                    Log.w("Firebase", "Fetching FCM registration token failed", task.exception)
+                                    return@OnCompleteListener
+                                }
+
+                                // Get new FCM registration token
+                                val token = task.result
+
+                                // Log and toa
+                                Log.d("firebase", token)
+                            })
                         User.USER_ID = (response.body() as? Double?)?.toInt()
                         onNavigateToMainScreen()
                     } else {
@@ -184,6 +201,19 @@ fun LoginScreenButton(
                     call: Call<Any>, response: Response<Any>
                 ) {
                     if (response.code() == 200) {
+                        FirebaseMessaging.getInstance().token.addOnCompleteListener(
+                            OnCompleteListener { task ->
+                            if (!task.isSuccessful) {
+                                Log.w("Firebase", "Fetching FCM registration token failed", task.exception)
+                                return@OnCompleteListener
+                            }
+
+                            // Get new FCM registration token
+                            val token = task.result
+
+                            // Log and toa
+                            Log.d("firebase", token)
+                        })
                         User.USER_ID = (response.body() as? Double?)?.toInt()
                         User.EMAIL = email.value
                         User.HASH = Hasher.hash(password.value)
