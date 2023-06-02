@@ -141,14 +141,36 @@ fun LoginScreen(
                         FirebaseMessaging.getInstance().token.addOnCompleteListener(
                             OnCompleteListener { task ->
                                 if (!task.isSuccessful) {
-                                    Log.w("Firebase", "Fetching FCM registration token failed", task.exception)
+                                    Log.w(
+                                        "Firebase",
+                                        "Fetching FCM registration token failed",
+                                        task.exception
+                                    )
                                     return@OnCompleteListener
                                 }
-
-                                // Get new FCM registration token
                                 val token = task.result
+                                val tokenResponse =
+                                    userApi.updateToken(User.USER_ID!!, token.toString())
+                                tokenResponse.enqueue(object : Callback<Unit> {
+                                    override fun onResponse(
+                                        call: Call<Unit>,
+                                        tokenResponse: Response<Unit>
+                                    ) {
+                                        if (tokenResponse.code() == 200) {
+                                            Log.d("server", "Токен обновлен")
+                                        } else {
+                                            Log.d(
+                                                "server",
+                                                tokenResponse.code().toString()
+                                            )
+                                        }
+                                    }
 
-                                // Log and toa
+                                    override fun onFailure(call: Call<Unit>, t: Throwable) {
+                                        Log.d("server", t.message.toString())
+                                    }
+                                })
+                                Log.d("firebase", "sendRegistrationTokenToServer($token)")
                                 Log.d("firebase", token)
                             })
                         User.USER_ID = (response.body() as? Double?)?.toInt()
@@ -201,17 +223,39 @@ fun LoginScreenButton(
                     if (response.code() == 200) {
                         FirebaseMessaging.getInstance().token.addOnCompleteListener(
                             OnCompleteListener { task ->
-                            if (!task.isSuccessful) {
-                                Log.w("Firebase", "Fetching FCM registration token failed", task.exception)
-                                return@OnCompleteListener
-                            }
+                                if (!task.isSuccessful) {
+                                    Log.w(
+                                        "Firebase",
+                                        "Fetching FCM registration token failed",
+                                        task.exception
+                                    )
+                                    return@OnCompleteListener
+                                }
+                                val token = task.result
+                                val tokenResponse =
+                                    userApi.updateToken(User.USER_ID!!, token.toString())
+                                tokenResponse.enqueue(object : Callback<Unit> {
+                                    override fun onResponse(
+                                        call: Call<Unit>,
+                                        tokenResponse: Response<Unit>
+                                    ) {
+                                        if (tokenResponse.code() == 200) {
+                                            Log.d("server", "Токен обновлен")
+                                        } else {
+                                            Log.d(
+                                                "server",
+                                                tokenResponse.code().toString()
+                                            )
+                                        }
+                                    }
 
-                            // Get new FCM registration token
-                            val token = task.result
+                                    override fun onFailure(call: Call<Unit>, t: Throwable) {
+                                        Log.d("server", t.message.toString())
+                                    }
+                                })
 
-                            // Log and toa
-                            Log.d("firebase", token)
-                        })
+                                Log.d("firebase", token)
+                            })
                         User.USER_ID = (response.body() as? Double?)?.toInt()
                         User.EMAIL = email.value
                         User.HASH = Hasher.hash(password.value)
@@ -260,6 +304,7 @@ fun LoginScreenButton(
 
     }
 }
+
 @Composable
 fun BackToRegistration(inputEnabled: MutableState<Boolean>, onNavigateToRegistration: () -> Unit) {
     TextButton(
@@ -276,6 +321,7 @@ fun BackToRegistration(inputEnabled: MutableState<Boolean>, onNavigateToRegistra
         Text(text = "Зарегистрироваться")
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {

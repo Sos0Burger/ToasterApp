@@ -15,7 +15,7 @@ import retrofit2.http.Path
 
 interface UserApi {
     @POST("user")
-    fun registration(@Body userDTO: UserDTO): Call<Any>
+    fun registration(@Body userDTO: UserDTO): Call<Unit>
 
     @GET("user/auth")
     fun auth(@Header("email") email:String, @Header("hash") hash:String): Call<Any>
@@ -43,5 +43,8 @@ interface UserApi {
 
     @GET("/user/{id}/settings")
     fun getSettings(@Path("id") id:Int) : Call<UserSettingsDTO>
+
+    @PUT("/user/{id}/firebase")
+    fun updateToken(@Path("id")id:Int, @Body token:String) : Call<Unit>
 
 }

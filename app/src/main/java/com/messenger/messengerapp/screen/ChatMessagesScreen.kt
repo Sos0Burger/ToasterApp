@@ -88,6 +88,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     val messages: MutableList<ResponseMessageDTO> = remember {
         mutableStateListOf()
     }
+    User.messages = messages
 
     val imageUris: MutableList<Uri> = remember {
         mutableStateListOf()

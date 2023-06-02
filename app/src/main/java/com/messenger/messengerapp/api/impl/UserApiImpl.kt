@@ -11,7 +11,7 @@ import retrofit2.Call
 private val userApi = RetrofitClient.getInstance().create(UserApi::class.java)
 
 class UserApiImpl:UserApi {
-    override fun registration(userDTO: UserDTO): Call<Any> {
+    override fun registration(userDTO: UserDTO): Call<Unit> {
         return userApi.registration(userDTO)
     }
 
@@ -49,5 +49,9 @@ class UserApiImpl:UserApi {
 
     override fun getSettings(id: Int): Call<UserSettingsDTO> {
         return userApi.getSettings(id)
+    }
+
+    override fun updateToken(id: Int, token: String): Call<Unit> {
+        return userApi.updateToken(id, token)
     }
 }

@@ -216,14 +216,28 @@ fun Friends() {
 
     fun acceptFriendRequest() {
         val userApi = UserApiImpl()
-        val response = userApi.acceptFriendRequest(User.USER_ID!!, friendList[clickedItem.value].id)
+        val currentList:MutableList<FriendDTO>
+        when (pageState.currentPage) {
+            2 -> {
+                currentList = friendPendingList
+            }
+
+            1 -> {
+                currentList = friendPendingList
+            }
+
+            else -> {
+                currentList = friendList
+            }
+        }
+        val response = userApi.acceptFriendRequest(User.USER_ID!!,currentList[clickedItem.value].id )
         response.enqueue(object : Callback<Unit> {
             override fun onResponse(
                 call: Call<Unit>,
                 response: Response<Unit>
             ) {
                 if (response.code() == 201) {
-                    friendList.removeAt(clickedItem.value)
+                    currentList.removeAt(clickedItem.value)
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                     Log.d(

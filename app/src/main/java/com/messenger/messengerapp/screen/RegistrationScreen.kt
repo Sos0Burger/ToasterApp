@@ -298,8 +298,8 @@ fun RegistrationButton(
                         password = Hasher.hash(password.value)
                     )
                 )
-            response.enqueue(object : Callback<Any> {
-                override fun onResponse(call: Call<Any>, response: Response<Any>) {
+            response.enqueue(object : Callback<Unit> {
+                override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
                     if (response.code() == 201) {
                         Log.d("server", response.code().toString())
                         User.EMAIL = email.value
@@ -324,7 +324,7 @@ fun RegistrationButton(
                     }
                 }
 
-                override fun onFailure(call: Call<Any>, t: Throwable) {
+                override fun onFailure(call: Call<Unit>, t: Throwable) {
                     errorMessage.value = "Ошибка подключения"
                     snackBarState.value = true
                     Log.d("server", t.message.toString())
