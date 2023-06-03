@@ -11,6 +11,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 
 interface UserApi {
@@ -45,6 +46,6 @@ interface UserApi {
     fun getSettings(@Path("id") id:Int) : Call<UserSettingsDTO>
 
     @PUT("/user/{id}/firebase")
-    fun updateToken(@Path("id")id:Int, @Body token:String) : Call<Unit>
+    fun updateToken(@Path("id")id:Int, @Query("token") token:String) : Call<Unit>
 
 }

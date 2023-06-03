@@ -150,7 +150,7 @@ fun LoginScreen(
                                 }
                                 val token = task.result
                                 val tokenResponse =
-                                    userApi.updateToken(User.USER_ID!!, token.toString())
+                                    userApi.updateToken(User.USER_ID!!, token)
                                 tokenResponse.enqueue(object : Callback<Unit> {
                                     override fun onResponse(
                                         call: Call<Unit>,

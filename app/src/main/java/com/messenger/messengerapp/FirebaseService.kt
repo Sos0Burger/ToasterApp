@@ -14,6 +14,8 @@ import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
+import com.messenger.messengerapp.dto.FileDTO
+import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.dto.ResponseMessageDTO
 import retrofit2.Call
 import retrofit2.Callback
@@ -36,9 +38,12 @@ class FirebaseService : FirebaseMessagingService() {
         val gson = Gson()
 
         sendNotification(
-            gson.fromJson(
-                gson.toJson(remoteMessage.data),
-                ResponseMessageDTO::class.java
+            ResponseMessageDTO(
+                text = gson.fromJson(gson.toJson(remoteMessage.data["text"]), String::class.java),
+                sender = gson.fromJson(remoteMessage.data["sender"].toString(), FriendDTO::class.java),
+                receiver = gson.fromJson(remoteMessage.data["receiver"].toString(), FriendDTO::class.java),
+                date = gson.fromJson(remoteMessage.data["date"].toString(), Long::class.java),
+                attachments = gson.fromJson(remoteMessage.data["attachments"].toString(), Array<FileDTO>::class.java).toList()
             )
         )
     }
