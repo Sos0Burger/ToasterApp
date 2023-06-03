@@ -170,8 +170,7 @@ fun Chat(friendDTOShare: MutableState<FriendDTO>, onChatMessages: () -> Unit) {
                                         .fillMaxWidth(1f)
                                 ) {
                                     Text(
-                                        text = friendList[index].nickname
-                                            ?: "Альтернативное имя не указано", color = Color.White
+                                        text = friendList[index].nickname?: "Альтернативное имя не указано", color = Color.White, fontSize = 20.sp
                                     )
                                     Text(
                                         text = "ID: " + friendList[index].id.toString(),

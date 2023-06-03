@@ -481,7 +481,8 @@ fun FriendList(
                                     Text(
                                         text = friendList[index].nickname
                                             ?: "Альтернативное имя не указано",
-                                        color = Color.White
+                                        color = Color.White,
+                                        fontSize = 20.sp
                                     )
                                     Text(
                                         text = "ID: " + friendList[index].id.toString(),
