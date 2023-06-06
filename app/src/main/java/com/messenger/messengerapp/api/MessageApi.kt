@@ -11,7 +11,7 @@ import retrofit2.http.Path
 interface MessageApi {
 
     @POST("/message")
-    fun send(@Body requestMessageDTO: RequestMessageDTO) : Call<Unit>
+    fun send(@Body requestMessageDTO: RequestMessageDTO) : Call<ResponseMessageDTO>
 
     @GET("/message/{userid}/{companionid}/{page}")
     fun getDialog(@Path("userid") userId:Int, @Path("companionid")companionId:Int, @Path("page") page:Int ): Call<List<ResponseMessageDTO>>

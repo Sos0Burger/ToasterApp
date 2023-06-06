@@ -29,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +41,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -61,7 +63,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.messengerapp.R
-import com.messenger.messengerapp.api.RetrofitClient
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.MessageApiImpl
 import com.messenger.messengerapp.converter.TimeConverter
@@ -98,9 +99,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
             imageUris.size
         }
     }
-    val uploadedImageIds = remember {
-        mutableStateListOf<Int>()
-    }
     val context = LocalContext.current
 
 
@@ -127,11 +125,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     val endReached by remember {
         derivedStateOf {
             !messageScrollState.canScrollForward && (messages.size >= messagePage.value * 15)
-        }
-    }
-    val filesSend by remember {
-        derivedStateOf {
-            uploadedImageIds.size == imageUris.size
         }
     }
     val inputEnabled = remember {
@@ -170,63 +163,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                 Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
             }
         })
-    }
-
-    fun sendMessage() {
-        val messageApi = MessageApiImpl()
-        val requestMessage = RequestMessageDTO(
-            message.value,
-            User.USER_ID!!,
-            friendDTO.id,
-            Date().time,
-            uploadedImageIds.toList()
-        )
-        val response = messageApi.send(requestMessage)
-        response.enqueue(object : Callback<Unit> {
-            override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
-                if (response.code() == 201) {
-                    val fileDTOs = ArrayList<FileDTO>()
-                    for (item in uploadedImageIds) {
-                        fileDTOs.add(
-                            FileDTO(
-                                -1,
-                                "вот очень не продумано",
-                                RetrofitClient.getInstance().baseUrl().toString() + "/file/$item",
-                                "очень нехорошо",
-                                1337
-                            )
-                        )
-                    }
-                    messages.add(
-                        0,
-                        ResponseMessageDTO(
-                            text = message.value,
-                            sender = FriendDTO(User.USER_ID!!, null, null),
-                            receiver = friendDTO,
-                            requestMessage.date,
-                            fileDTOs
-                        )
-                    )
-                    message.value += 1
-                    message.value = ""
-                    imageUris.clear()
-                    uploadedImageIds.clear()
-                } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
-                    Log.d(
-                        "server",
-                        response.code().toString()
-                    )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onFailure(call: Call<Unit>, t: Throwable) {
-                Log.d("server", t.message.toString())
-                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-            }
-        })
-        inputEnabled.value = true
     }
 
     Surface(
@@ -334,11 +270,15 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                         onClick = {
                             imageUris.removeAt(index)
                         },
+                        enabled = inputEnabled.value,
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier
                             .size(64.dp, 96.dp),
                         shape = RectangleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent
+                        )
                     ) {
                         Image(
                             painter = rememberAsyncImagePainter(model = imageUris[index]),
@@ -373,13 +313,15 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                     onValueChange = {
                         message.value = it
                     },
+                    enabled = inputEnabled.value,
                     shape = MaterialTheme.shapes.extraLarge,
                     label = { Text(text = "Сообщение", color = Color.LightGray) },
                     colors = TextFieldDefaults.textFieldColors(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         containerColor = Color.DarkGray,
-                        cursorColor = Orange
+                        cursorColor = Orange,
+                        disabledIndicatorColor = Color.Transparent
                     ),
                     modifier = Modifier
                         .verticalScroll(scrollState)
@@ -388,25 +330,46 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                 )
                 IconButton(
                     onClick = {
-                        sendFiles(
-                            imageUris,
-                            context,
-                            uploadedImageIds
-                        )
                         inputEnabled.value = false
+                        if (imageUris.isEmpty()) {
+                            sendMessage(
+                                context,
+                                message,
+                                friendDTO,
+                                messages,
+                                ArrayList(),
+                                imageUris,
+                                inputEnabled
+                            )
+                        } else {
+                            sendFileMessage(
+                                context = context,
+                                imageUris = imageUris,
+                                messages = messages,
+                                message = message,
+                                inputEnabled = inputEnabled,
+                                friendDTO = friendDTO
+                            )
+                        }
+
                     },
                     colors = IconButtonDefaults.iconButtonColors(
                         contentColor = Orange,
                         disabledContentColor = Color.DarkGray
                     ),
-                    enabled = (message.value.isNotEmpty() || imageCount.value > 0) || inputEnabled.value
+                    enabled = (message.value.isNotEmpty() || imageCount.value > 0) && inputEnabled.value
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.send_icon),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(32.dp)
-                    )
+                    if (inputEnabled.value) {
+                        Icon(
+                            painter = painterResource(R.drawable.send_icon),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(32.dp)
+                        )
+                    } else {
+                        CircularProgressIndicator(color = Orange, modifier = Modifier.size(48.dp))
+                    }
+
                 }
             }
         }
@@ -418,11 +381,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
         }
     }
 
-    if (!inputEnabled.value && filesSend) {
-        LaunchedEffect(Unit) {
-            sendMessage()
-        }
-    }
 }
 
 @Preview(showBackground = true)
@@ -431,11 +389,62 @@ fun ChatMessagesScreenPreview() {
     ChatMessagesScreen(FriendDTO(16, "Анонимус228", null))
 }
 
-fun sendFiles(
-    files: List<Uri>,
+fun sendMessage(
     context: Context,
-    uploadedImageIds: MutableList<Int>
+    message: MutableState<String>,
+    friendDTO: FriendDTO,
+    messages: MutableList<ResponseMessageDTO>,
+    uploadedImageIds: MutableList<Int>,
+    imageUris: MutableList<Uri>,
+    inputEnabled: MutableState<Boolean>
 ) {
+    val messageApi = MessageApiImpl()
+    val requestMessage = RequestMessageDTO(
+        message.value,
+        User.USER_ID!!,
+        friendDTO.id,
+        Date().time,
+        uploadedImageIds
+    )
+    val response = messageApi.send(requestMessage)
+    response.enqueue(object : Callback<ResponseMessageDTO> {
+        override fun onResponse(
+            call: Call<ResponseMessageDTO>,
+            response: Response<ResponseMessageDTO>
+        ) {
+            if (response.code() == 201) {
+                messages.add(0, response.body()!!)
+                message.value = ""
+                imageUris.clear()
+            } else {
+                val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                Log.d(
+                    "server",
+                    response.code().toString()
+                )
+                Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
+            }
+            inputEnabled.value = true
+        }
+
+        override fun onFailure(call: Call<ResponseMessageDTO>, t: Throwable) {
+            Log.d("server", t.message.toString())
+            Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+            inputEnabled.value = true
+        }
+    })
+
+}
+
+fun sendFileMessage(
+    context: Context,
+    imageUris: MutableList<Uri>,
+    message: MutableState<String>,
+    friendDTO: FriendDTO,
+    messages: MutableList<ResponseMessageDTO>,
+    inputEnabled: MutableState<Boolean>
+) {
+    val files = imageUris.toList()
     if (files.isNotEmpty()) {
         val fileApi = FileApiImpl()
         val multipartFiles = ArrayList<MultipartBody.Part>()
@@ -453,14 +462,24 @@ fun sendFiles(
                 )
             )
         }
-
+        val uploadedImageIds = ArrayList<Int>()
         for (item in multipartFiles) {
             val response = fileApi.upload(item)
-
             response.enqueue(object : Callback<FileDTO> {
                 override fun onResponse(call: Call<FileDTO>, response: Response<FileDTO>) {
                     if (response.code() == 201) {
                         uploadedImageIds.add(response.body()!!.id)
+                        if (uploadedImageIds.size == files.size) {
+                            sendMessage(
+                                context,
+                                message,
+                                friendDTO,
+                                messages,
+                                uploadedImageIds,
+                                imageUris,
+                                inputEnabled
+                            )
+                        }
                     } else {
                         val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                         Log.d(

@@ -9,7 +9,7 @@ import retrofit2.Call
 private val messageApi = RetrofitClient.getInstance().create(MessageApi::class.java)
 
 class MessageApiImpl : MessageApi {
-    override fun send(requestMessageDTO: RequestMessageDTO) : Call<Unit> {
+    override fun send(requestMessageDTO: RequestMessageDTO) : Call<ResponseMessageDTO> {
         return messageApi.send(requestMessageDTO)
     }
 
