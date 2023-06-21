@@ -5,6 +5,7 @@ import com.messenger.messengerapp.api.UserApi
 import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.dto.UserDTO
+import com.messenger.messengerapp.dto.UserProfileDTO
 import com.messenger.messengerapp.dto.UserSettingsDTO
 import retrofit2.Call
 
@@ -53,5 +54,9 @@ class UserApiImpl:UserApi {
 
     override fun updateToken(id: Int, token: String): Call<Unit> {
         return userApi.updateToken(id, token)
+    }
+
+    override fun getUser(id: Int): Call<UserProfileDTO> {
+        return userApi.getUser(id)
     }
 }

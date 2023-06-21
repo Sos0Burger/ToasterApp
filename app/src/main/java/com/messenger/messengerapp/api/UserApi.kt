@@ -3,6 +3,7 @@ package com.messenger.messengerapp.api
 import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.dto.UserDTO
+import com.messenger.messengerapp.dto.UserProfileDTO
 import com.messenger.messengerapp.dto.UserSettingsDTO
 import retrofit2.Call
 import retrofit2.http.Body
@@ -47,5 +48,8 @@ interface UserApi {
 
     @PUT("/user/{id}/firebase")
     fun updateToken(@Path("id")id:Int, @Query("token") token:String) : Call<Unit>
+
+    @GET("/user/{id}")
+    fun getUser(@Path("id") id:Int):Call<UserProfileDTO>
 
 }
