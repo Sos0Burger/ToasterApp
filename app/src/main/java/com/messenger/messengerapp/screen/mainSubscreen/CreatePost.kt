@@ -1,6 +1,8 @@
 package com.messenger.messengerapp.screen.mainSubscreen
 
+import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,6 +37,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +54,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.api.impl.FileApiImpl
+import com.messenger.messengerapp.api.impl.PostApiImpl
+import com.messenger.messengerapp.data.User
+import com.messenger.messengerapp.dto.FileDTO
+import com.messenger.messengerapp.dto.RequestPostDTO
+import com.messenger.messengerapp.dto.ResponsePostDTO
+import com.messenger.messengerapp.requestbody.InputStreamRequestBody
 import com.messenger.messengerapp.ui.theme.Orange
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +104,10 @@ fun CreatePostScreen() {
         }
     }
 
+    val inputEnabled = remember {
+        mutableStateOf(true)
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -110,13 +131,14 @@ fun CreatePostScreen() {
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = { /*TODO*/ },
+                    onClick = { sendFilePost(context, imageUris ,text, inputEnabled ) },
                     colors = IconButtonDefaults.iconButtonColors(
-                        disabledContentColor = Color.LightGray,
+                        disabledContentColor = Color.DarkGray,
                         disabledContainerColor = Color.Transparent,
                         containerColor = Color.Transparent,
                         contentColor = Orange
-                    )
+                    ),
+                    enabled = text.value.isNotEmpty()||imageUris.isNotEmpty()&&inputEnabled.value
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.check_icon),
@@ -150,7 +172,8 @@ fun CreatePostScreen() {
                             .screenHeightDp
                             .dp / 2
                     ),
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
+                enabled = inputEnabled.value
             )
             LazyRow(
                 contentPadding = PaddingValues(4.dp),
@@ -158,7 +181,7 @@ fun CreatePostScreen() {
             ) {
                 item {
                     Button(
-                        onClick = { launcher.launch("image/*")},
+                        onClick = { launcher.launch("image/*") },
                         modifier = Modifier
                             .fillMaxHeight(1f)
                             .width(128.dp),
@@ -166,7 +189,8 @@ fun CreatePostScreen() {
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.DarkGray,
                             contentColor = Color.White
-                        )
+                        ),
+                        enabled = inputEnabled.value
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.add_photo_icon),
@@ -175,17 +199,17 @@ fun CreatePostScreen() {
                         )
                     }
                 }
-                items(count = imageCount.value){
-                    index ->
+                items(count = imageCount.value) { index ->
                     Button(
-                        onClick = { imageUris.removeAt(index)},
+                        onClick = { imageUris.removeAt(index) },
                         modifier = Modifier
                             .fillMaxHeight(1f)
                             .width(128.dp),
                         shape = RoundedCornerShape(20),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent,
-                        )
+                        ),
+                        enabled = inputEnabled.value
                     ) {
                         Image(
                             painter = rememberAsyncImagePainter(model = imageUris[index]),
@@ -198,6 +222,107 @@ fun CreatePostScreen() {
             }
         }
     }
+}
+
+fun sendFilePost(
+    context: Context,
+    imageUris: MutableList<Uri>,
+    text: MutableState<String>,
+    inputEnabled: MutableState<Boolean>
+) {
+    inputEnabled.value = false
+    val files = imageUris.toList()
+    if (files.isNotEmpty()) {
+        val fileApi = FileApiImpl()
+        val multipartFiles = ArrayList<MultipartBody.Part>()
+        val cR = context.contentResolver
+        for (item in files) {
+            multipartFiles.add(
+                MultipartBody.Part.createFormData(
+                    "attachment",
+                    item.path,
+                    InputStreamRequestBody(
+                        cR.getType(item)!!.toMediaType(),
+                        context.contentResolver,
+                        item
+                    )
+                )
+            )
+        }
+        val uploadedImageIds = ArrayList<Int>()
+        for (item in multipartFiles) {
+            val response = fileApi.upload(item)
+            response.enqueue(object : Callback<FileDTO> {
+                override fun onResponse(call: Call<FileDTO>, response: Response<FileDTO>) {
+                    if (response.isSuccessful) {
+                        uploadedImageIds.add(response.body()!!.id)
+                        if (uploadedImageIds.size == files.size) {
+                            sendPost(context, text, uploadedImageIds, inputEnabled)
+                        }
+                    } else {
+                        val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                        Log.d(
+                            "server",
+                            response.code().toString()
+                        )
+                        Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
+                            .show()
+                        inputEnabled.value = true
+                    }
+                }
+
+                override fun onFailure(call: Call<FileDTO>, t: Throwable) {
+                    Log.d("server", t.message.toString())
+                    Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+                    inputEnabled.value = true
+                }
+            })
+        }
+    } else {
+        sendPost(context, text, ArrayList(), inputEnabled)
+    }
+}
+
+private fun sendPost(
+    context: Context,
+    text: MutableState<String>,
+    uploadedImageIds: MutableList<Int>,
+    inputEnabled: MutableState<Boolean>
+) {
+    val postApi = PostApiImpl()
+
+    val response = postApi.createPost(
+        RequestPostDTO(
+            text = text.value,
+            date = Date().time,
+            creator = User.USER_ID!!,
+            attachments = uploadedImageIds
+        )
+    )
+    response.enqueue(object : Callback<ResponsePostDTO>{
+        override fun onResponse(call: Call<ResponsePostDTO>, response: Response<ResponsePostDTO>) {
+            if (response.isSuccessful) {
+                //todo
+            } else {
+                val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                Log.d(
+                    "server",
+                    response.code().toString()
+                )
+                Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
+                    .show()
+                inputEnabled.value = true
+            }
+        }
+
+        override fun onFailure(call: Call<ResponsePostDTO>, t: Throwable) {
+            Log.d("server", t.message.toString())
+            Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+            inputEnabled.value = true
+        }
+
+    })
+
 }
 
 @Preview(showBackground = true)
