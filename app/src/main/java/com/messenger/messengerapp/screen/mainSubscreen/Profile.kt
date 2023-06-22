@@ -2,17 +2,24 @@ package com.messenger.messengerapp.screen.mainSubscreen
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -27,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -37,6 +46,7 @@ import coil.compose.AsyncImage
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.PostApiImpl
 import com.messenger.messengerapp.api.impl.UserApiImpl
+import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.ResponsePostDTO
 import com.messenger.messengerapp.dto.UserProfileDTO
 import com.messenger.messengerapp.ui.theme.Orange
@@ -44,7 +54,9 @@ import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import kotlin.math.absoluteValue
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Profile(id: Int) {
 
@@ -220,6 +232,20 @@ fun Profile(id: Int) {
                         }
                     }
                 }
+                if (id == User.USER_ID) {
+                    item {
+                        Button(
+                            onClick = { /*TODO*/ },
+                            modifier = Modifier.fillMaxWidth(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                contentColor = Color.White,
+                                containerColor = Color.DarkGray
+                            )
+                        ) {
+                            Text(text = "Создать новую запись", fontSize = 14.sp)
+                        }
+                    }
+                }
 
                 items(count = postCount.value) { index ->
                     Column() {
@@ -245,6 +271,30 @@ fun Profile(id: Int) {
                                 color = Color.White
                             )
                         }
+                        val pagerState = rememberPagerState()
+                        HorizontalPager(
+                            pageCount = posts[index].attachments.size,
+                            modifier = Modifier.fillMaxSize(),
+                            state = pagerState
+                        ) { page ->
+                            Box(Modifier
+                                .graphicsLayer {
+                                    val pageOffset = pagerState.currentPageOffsetFraction
+                                    // translate the contents by the size of the page, to prevent the pages from sliding in from left or right and stays in the center
+                                    translationX = pageOffset * size.width
+                                    // apply an alpha to fade the current page in and the old page out
+                                    alpha = 1 - pageOffset.absoluteValue
+                                }) {
+                                AsyncImage(
+                                    model = posts[index].attachments[page],
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .clip(RectangleShape)
+                                        .size(128.dp, 256.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -252,7 +302,7 @@ fun Profile(id: Int) {
 
     }
 
-    if(endReached){
+    if (endReached) {
         getPosts()
     }
 
