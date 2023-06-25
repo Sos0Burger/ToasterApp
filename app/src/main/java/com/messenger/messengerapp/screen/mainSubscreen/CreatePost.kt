@@ -53,11 +53,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.PostApiImpl
 import com.messenger.messengerapp.data.User
+import com.messenger.messengerapp.data.User.USER_ID
 import com.messenger.messengerapp.dto.FileDTO
 import com.messenger.messengerapp.dto.RequestPostDTO
 import com.messenger.messengerapp.dto.ResponsePostDTO
@@ -73,7 +75,7 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreatePostScreen() {
+fun CreatePostScreen(navController:NavController) {
 
     val scrollState = rememberScrollState()
     val text = remember {
@@ -118,7 +120,9 @@ fun CreatePostScreen() {
         Column(modifier = Modifier.fillMaxSize(1f)) {
             Row(modifier = Modifier.fillMaxWidth(1f)) {
                 IconButton(
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                        navController.popBackStack()
+                              },
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = Color.Transparent,
                         contentColor = Color.White
@@ -132,7 +136,7 @@ fun CreatePostScreen() {
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = { sendFilePost(context, imageUris ,text, inputEnabled ) },
+                    onClick = { sendFilePost(context, imageUris , text, inputEnabled, navController ) },
                     colors = IconButtonDefaults.iconButtonColors(
                         disabledContentColor = Color.DarkGray,
                         disabledContainerColor = Color.Transparent,
@@ -150,7 +154,7 @@ fun CreatePostScreen() {
                         )
                     }
                     else{
-                        CircularProgressIndicator(color = Orange)
+                        CircularProgressIndicator(color = Orange, modifier = Modifier.size(32.dp))
                     }
                 }
             }
@@ -235,7 +239,8 @@ fun sendFilePost(
     context: Context,
     imageUris: MutableList<Uri>,
     text: MutableState<String>,
-    inputEnabled: MutableState<Boolean>
+    inputEnabled: MutableState<Boolean>,
+    navController: NavController
 ) {
     inputEnabled.value = false
     val files = imageUris.toList()
@@ -264,7 +269,7 @@ fun sendFilePost(
                     if (response.isSuccessful) {
                         uploadedImageIds.add(response.body()!!.id)
                         if (uploadedImageIds.size == files.size) {
-                            sendPost(context, text, uploadedImageIds, inputEnabled)
+                            sendPost(context, text, uploadedImageIds, inputEnabled, navController)
                         }
                     } else {
                         val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -286,7 +291,7 @@ fun sendFilePost(
             })
         }
     } else {
-        sendPost(context, text, ArrayList(), inputEnabled)
+        sendPost(context, text, ArrayList(), inputEnabled, navController)
     }
 }
 
@@ -294,7 +299,8 @@ private fun sendPost(
     context: Context,
     text: MutableState<String>,
     uploadedImageIds: MutableList<Int>,
-    inputEnabled: MutableState<Boolean>
+    inputEnabled: MutableState<Boolean>,
+    navController: NavController
 ) {
     val postApi = PostApiImpl()
 
@@ -302,14 +308,14 @@ private fun sendPost(
         RequestPostDTO(
             text = text.value,
             date = Date().time,
-            creator = User.USER_ID!!,
+            creator = USER_ID!!,
             attachments = uploadedImageIds
         )
     )
     response.enqueue(object : Callback<ResponsePostDTO>{
         override fun onResponse(call: Call<ResponsePostDTO>, response: Response<ResponsePostDTO>) {
             if (response.isSuccessful) {
-                //todo
+                navController.navigate("profile/"+ USER_ID!!)
             } else {
                 val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                 Log.d(
@@ -335,5 +341,5 @@ private fun sendPost(
 @Preview(showBackground = true)
 @Composable
 fun CreatePostScreenPreview() {
-    CreatePostScreen()
+    CreatePostScreen(NavController(LocalContext.current))
 }
