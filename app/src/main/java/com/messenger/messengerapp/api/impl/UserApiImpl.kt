@@ -12,7 +12,7 @@ import retrofit2.Call
 private val userApi = RetrofitClient.getInstance().create(UserApi::class.java)
 
 class UserApiImpl:UserApi {
-    override fun registration(userDTO: UserDTO): Call<Unit> {
+    override fun registration(userDTO: UserDTO): Call<UserProfileDTO> {
         return userApi.registration(userDTO)
     }
 
@@ -36,7 +36,7 @@ class UserApiImpl:UserApi {
         return userApi.getSent(id)
     }
 
-    override fun acceptFriendRequest(receiverid: Int, senderid: Int): Call<Unit> {
+    override fun acceptFriendRequest(receiverid: Int, senderid: Int): Call<FriendDTO> {
         return userApi.acceptFriendRequest(receiverid, senderid)
     }
 

@@ -17,7 +17,7 @@ import retrofit2.http.Query
 
 interface UserApi {
     @POST("user")
-    fun registration(@Body userDTO: UserDTO): Call<Unit>
+    fun registration(@Body userDTO: UserDTO): Call<UserProfileDTO>
 
     @GET("user/auth")
     fun auth(@Header("email") email:String, @Header("hash") hash:String): Call<Any>
@@ -35,7 +35,7 @@ interface UserApi {
     fun getSent(@Path("id") id:Int):Call<List<FriendDTO>>
 
     @POST("user/friends/{receiverid}/{senderid}")
-    fun acceptFriendRequest(@Path("receiverid") receiverid: Int, @Path("senderid") senderid: Int) : Call<Unit>
+    fun acceptFriendRequest(@Path("receiverid") receiverid: Int, @Path("senderid") senderid: Int) : Call<FriendDTO>
 
     @PUT("/user/{id}/picture")
     fun updatePicture(@Path("id") id:Int, @Body auth:AuthDTO, @Header("url") url:String) : Call<Unit>

@@ -34,6 +34,7 @@ import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.UserDTO
+import com.messenger.messengerapp.dto.UserProfileDTO
 import com.messenger.messengerapp.hasher.Hasher
 import com.messenger.messengerapp.infomessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
@@ -298,8 +299,8 @@ fun RegistrationButton(
                         password = Hasher.hash(password.value)
                     )
                 )
-            response.enqueue(object : Callback<Unit> {
-                override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
+            response.enqueue(object : Callback<UserProfileDTO> {
+                override fun onResponse(call: Call<UserProfileDTO>, response: Response<UserProfileDTO>) {
                     if (response.code() == 201) {
                         Log.d("server", response.code().toString())
                         User.EMAIL = email.value
@@ -324,7 +325,7 @@ fun RegistrationButton(
                     }
                 }
 
-                override fun onFailure(call: Call<Unit>, t: Throwable) {
+                override fun onFailure(call: Call<UserProfileDTO>, t: Throwable) {
                     errorMessage.value = "Ошибка подключения"
                     snackBarState.value = true
                     Log.d("server", t.message.toString())
