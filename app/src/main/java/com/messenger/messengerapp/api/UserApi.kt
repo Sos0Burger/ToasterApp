@@ -2,6 +2,7 @@ package com.messenger.messengerapp.api
 
 import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
+import com.messenger.messengerapp.dto.ResponsePostDTO
 import com.messenger.messengerapp.dto.UserDTO
 import com.messenger.messengerapp.dto.UserProfileDTO
 import com.messenger.messengerapp.dto.UserSettingsDTO
@@ -51,5 +52,8 @@ interface UserApi {
 
     @GET("/user/{id}")
     fun getUser(@Path("id") id:Int):Call<UserProfileDTO>
+
+    @GET("/user/{id}/feed")
+    fun getFeed(@Path("id") id:Int, @Query("page")page:Int) : Call<List<ResponsePostDTO>>
 
 }

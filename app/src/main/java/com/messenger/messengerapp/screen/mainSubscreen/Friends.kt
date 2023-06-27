@@ -136,7 +136,7 @@ fun Friends() {
                     User.USER_ID!!
                 )
 
-                else -> userApi.getFriends(User.USER_ID!!)
+                else -> userApi.getFriends(User.USER_ID?:-1)
             }
         response.enqueue(object : Callback<List<FriendDTO>> {
             override fun onResponse(
@@ -192,7 +192,7 @@ fun Friends() {
                 response: Response<FriendDTO>
             ) {
                 if (response.code() == 201) {
-                    friendList.add(response.body()!!)
+                    friendSentList.add(response.body()!!)
                     friendId.value = ""
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -219,7 +219,7 @@ fun Friends() {
         val currentList:MutableList<FriendDTO>
         when (pageState.currentPage) {
             2 -> {
-                currentList = friendPendingList
+                currentList = friendSentList
             }
 
             1 -> {
@@ -231,13 +231,14 @@ fun Friends() {
             }
         }
         val response = userApi.acceptFriendRequest(User.USER_ID!!,currentList[clickedItem.value].id )
-        response.enqueue(object : Callback<Unit> {
+        response.enqueue(object : Callback<FriendDTO> {
             override fun onResponse(
-                call: Call<Unit>,
-                response: Response<Unit>
+                call: Call<FriendDTO>,
+                response: Response<FriendDTO>
             ) {
                 if (response.code() == 201) {
                     currentList.removeAt(clickedItem.value)
+                    friendList.add(response.body()!!)
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                     Log.d(
@@ -250,7 +251,7 @@ fun Friends() {
                 }
             }
 
-            override fun onFailure(call: Call<Unit>, t: Throwable) {
+            override fun onFailure(call: Call<FriendDTO>, t: Throwable) {
                 Log.d("server", t.message.toString())
                 Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
             }

@@ -2,35 +2,25 @@ package com.messenger.messengerapp.screen.mainSubscreen
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,20 +33,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.PostApiImpl
 import com.messenger.messengerapp.api.impl.UserApiImpl
+import com.messenger.messengerapp.composable.Post
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.ResponsePostDTO
 import com.messenger.messengerapp.dto.UserProfileDTO
@@ -65,9 +52,7 @@ import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import kotlin.math.absoluteValue
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Profile(id: String, onCreatePost: () -> Unit) {
 
@@ -84,6 +69,7 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
     val postCount = remember {
         derivedStateOf { posts.size }
     }
+
     val postPage = remember {
         mutableStateOf(0)
     }
@@ -185,15 +171,18 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
             }
             LazyColumn(modifier = Modifier.fillMaxSize(1f)) {
                 item {
-                    Row(horizontalArrangement = Arrangement.SpaceAround) {
-                        Spacer(Modifier.weight(1f))
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
                         AsyncImage(
                             model = profile.value.image
                                 ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .size(128.dp)
+                                .padding(start = 8.dp, end = 16.dp)
+                                .size(96.dp)
                                 .clip(CircleShape)
                         )
                         Column {
@@ -267,98 +256,7 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
                 }
 
                 items(count = postCount.value) { index ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .fillMaxWidth(1f)
-                            .background(color = Color.DarkGray, shape = MaterialTheme.shapes.medium)
-                    ) {
-                        Row(modifier = Modifier.padding(top = 8.dp)) {
-                            AsyncImage(
-                                model = posts[index].creator.image
-                                    ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp)
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                            )
-                            Column {
-                                Text(
-                                    text = posts[index].creator.nickname
-                                        ?: "Альтернативное имя не указано",
-                                    fontSize = 16.sp,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "ID: " + posts[index].creator.id.toString(),
-                                    fontSize = 12.sp,
-                                    color = Color.White
-                                )
-                            }
-                        }
-
-                        Divider(
-                            color = Color.Gray,
-                            modifier = Modifier.padding(top = 2.dp, end = 16.dp, start = 16.dp)
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(1f)
-                                .padding(8.dp)
-                        ) {
-                            Text(
-                                text = posts[index].text.toString(),
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                textAlign = TextAlign.Start
-                            )
-                        }
-
-
-                        val pagerState = rememberPagerState()
-                        Box() {
-                            HorizontalPager(
-                                pageCount = posts[index].attachments.size,
-                                modifier = Modifier.fillMaxSize(),
-                                state = pagerState
-                            ) { page ->
-                                Box(Modifier.background(color = Color.Gray)) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(posts[index].attachments[page].url)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .clip(RectangleShape)
-                                            .height(512.dp)
-                                    )
-                                }
-                            }
-                            Row(
-                                Modifier
-                                    .padding(4.dp)
-                                    .background(
-                                        Color.DarkGray,
-                                        shape = MaterialTheme.shapes.medium
-                                    ),
-                            ) {
-                                Text(
-                                    text = (
-                                            (pagerState.currentPage + 1).toString()
-                                                    + " / "
-                                                    + posts[index].attachments.size),
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp)
-                                )
-                            }
-
-                        }
-                    }
+                    Post(post = posts[index])
                 }
 
                 item {
@@ -376,9 +274,7 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
                 }
             }
         }
-
     }
-
     if (endReached && !isPostLoading.value && profile.value.id != -1) {
         getPosts()
     }

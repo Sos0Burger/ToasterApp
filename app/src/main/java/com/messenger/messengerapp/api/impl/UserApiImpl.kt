@@ -4,6 +4,7 @@ import com.messenger.messengerapp.api.RetrofitClient
 import com.messenger.messengerapp.api.UserApi
 import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
+import com.messenger.messengerapp.dto.ResponsePostDTO
 import com.messenger.messengerapp.dto.UserDTO
 import com.messenger.messengerapp.dto.UserProfileDTO
 import com.messenger.messengerapp.dto.UserSettingsDTO
@@ -58,5 +59,9 @@ class UserApiImpl:UserApi {
 
     override fun getUser(id: Int): Call<UserProfileDTO> {
         return userApi.getUser(id)
+    }
+
+    override fun getFeed(id: Int, page:Int): Call<List<ResponsePostDTO>> {
+        return userApi.getFeed(id, page)
     }
 }
