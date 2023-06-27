@@ -40,6 +40,7 @@ fun Post(post: ResponsePostDTO) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
+            .padding(bottom = 8.dp)
             .fillMaxWidth(1f)
             .background(color = Color.DarkGray, shape = MaterialTheme.shapes.medium)
     ) {
