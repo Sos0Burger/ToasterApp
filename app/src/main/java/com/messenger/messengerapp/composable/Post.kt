@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -104,10 +104,12 @@ fun Post(post: ResponsePostDTO) {
             Box(modifier = Modifier.padding(bottom = 8.dp)) {
                 HorizontalPager(
                     pageCount = post.attachments.size,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 1.dp),
                     state = pagerState
                 ) { page ->
-                    Box(Modifier.background(color = Color.Gray)) {
+                    Box(Modifier.background(color = Color.Gray, shape = RoundedCornerShape(5))) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(post.attachments[page].url)
@@ -116,7 +118,7 @@ fun Post(post: ResponsePostDTO) {
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .clip(RectangleShape)
+                                .clip(RoundedCornerShape(5))
                                 .height(512.dp)
                         )
                     }
