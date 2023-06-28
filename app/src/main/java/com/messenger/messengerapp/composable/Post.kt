@@ -46,14 +46,20 @@ fun Post(post: ResponsePostDTO) {
     ) {
         Row(modifier = Modifier.padding(top = 8.dp)) {
             AsyncImage(
-                model = post.creator.image
-                    ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                model = if (post.creator.image == null)
+                    "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                else
+                    ImageRequest.Builder(LocalContext.current)
+                        .data(post.creator.image)
+                        .crossfade(true)
+                        .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .size(48.dp)
                     .clip(CircleShape)
+                    .background(color = Color.DarkGray)
             )
             Column {
                 Text(

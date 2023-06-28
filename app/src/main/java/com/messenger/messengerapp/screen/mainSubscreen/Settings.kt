@@ -5,6 +5,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
@@ -216,8 +218,13 @@ fun Settings() {
                 AsyncImage(
                     model =
                     if (imageUri.value == Uri.EMPTY)
-                        userSettings.value.image
-                            ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                        if (userSettings.value.image == null)
+                            "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                        else
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(userSettings.value.image)
+                                .crossfade(true)
+                                .build()
                     else
                         imageUri.value,
                     contentDescription = null,
@@ -225,6 +232,7 @@ fun Settings() {
                     modifier = Modifier
                         .size(256.dp)
                         .clip(CircleShape)
+                        .background(color = Color.DarkGray)
                 )
             }
             Text(text = "Фото профиля", fontSize = 16.sp, color = Color.White)
@@ -263,11 +271,13 @@ fun Settings() {
                     if (nickname.value.length in 3..20) {
                         updateNickname()
                     } else {
-                        Toast.makeText(
-                            context,
-                            "Имя должно быть от 3 до 20 символов",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        if (nickname.value.isEmpty()) {
+                            Toast.makeText(
+                                context,
+                                "Имя должно быть от 3 до 20 символов",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 },
                 enabled = imageUri.value != Uri.EMPTY || (nickname.value.length in 3..19),

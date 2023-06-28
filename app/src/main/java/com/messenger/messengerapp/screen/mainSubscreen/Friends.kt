@@ -5,6 +5,7 @@ package com.messenger.messengerapp.screen.mainSubscreen
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
 import com.google.accompanist.swiperefresh.SwipeRefreshState
@@ -466,13 +468,19 @@ fun FriendList(
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
                             ) {
                                 AsyncImage(
-                                    model = friendList[index].image
-                                        ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                                    model = if (friendList[index].image == null)
+                                        "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                                    else
+                                        ImageRequest.Builder(LocalContext.current)
+                                            .data(friendList[index].image)
+                                            .crossfade(true)
+                                            .build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .size(96.dp)
                                         .clip(CircleShape)
+                                        .background(color = Color.DarkGray)
                                 )
                                 Column(
                                     modifier = Modifier

@@ -188,13 +188,19 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
                 ) {
                     AsyncImage(
-                        model = friendDTO.image
-                            ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                        model = if (friendDTO.image == null)
+                            "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                        else
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(friendDTO.image)
+                                .crossfade(true)
+                                .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
+                            .background(color = Color.DarkGray)
                     )
                     Column {
                         Text(

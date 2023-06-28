@@ -2,6 +2,7 @@ package com.messenger.messengerapp.screen.mainSubscreen
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.PostApiImpl
 import com.messenger.messengerapp.api.impl.UserApiImpl
@@ -176,14 +178,20 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
                         AsyncImage(
-                            model = profile.value.image
-                                ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                            model = if (profile.value.image == null)
+                                "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                            else
+                                ImageRequest.Builder(LocalContext.current)
+                                    .data(profile.value.image)
+                                    .crossfade(true)
+                                    .build(),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .padding(start = 8.dp, end = 16.dp)
                                 .size(96.dp)
                                 .clip(CircleShape)
+                                .background(color = Color.DarkGray)
                         )
                         Column {
                             Text(
@@ -213,14 +221,20 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
                             items(count = profile.value.friends.size) { index ->
                                 Column() {
                                     AsyncImage(
-                                        model = profile.value.friends[index].image
-                                            ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                                        model = if (profile.value.friends[index].image == null)
+                                            "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                                        else
+                                            ImageRequest.Builder(LocalContext.current)
+                                                .data(profile.value.friends[index].image)
+                                                .crossfade(true)
+                                                .build(),
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .padding(horizontal = 8.dp)
                                             .size(64.dp)
                                             .clip(CircleShape)
+                                            .background(color = Color.DarkGray)
                                     )
                                     Column {
                                         Text(
