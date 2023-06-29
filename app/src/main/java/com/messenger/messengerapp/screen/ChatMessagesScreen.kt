@@ -135,11 +135,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     val inputEnabled = remember {
         mutableStateOf(true)
     }
-    val messageCount = remember {
-        derivedStateOf {
-            messages.size
-        }
-    }
 
     fun getMessages(page: Int) {
         val messageApi = MessageApiImpl()
@@ -222,7 +217,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                 reverseLayout = true,
                 state = messageScrollState
             ) {
-                items(count = messageCount.value) { index ->
+                items(count = messages.size) { index ->
                     Row(
                         horizontalArrangement = if (messages[index].sender.id == User.USER_ID) Arrangement.End else Arrangement.Start,
                         modifier = Modifier.fillMaxWidth(1f)
@@ -251,45 +246,50 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                                 modifier = Modifier.padding(horizontal = 4.dp),
                                 fontSize = 16.sp
                             )
-                            val pagerState = rememberPagerState()
-                            Box() {
-                                HorizontalPager(
-                                    pageCount = messages[index].attachments.size,
-                                    modifier = Modifier.fillMaxSize(),
-                                    state = pagerState
-                                ) { page ->
-                                    Box(Modifier.background(color = Color.Gray)) {
-                                        AsyncImage(
-                                            model = ImageRequest.Builder(LocalContext.current)
-                                                .data(messages[index].attachments[page].url)
-                                                .crossfade(true)
-                                                .build(),
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .clip(RectangleShape)
-                                                .height(512.dp)
+                            if(messages[index].attachments.isNotEmpty()) {
+                                val pagerState = rememberPagerState()
+                                Box() {
+                                    HorizontalPager(
+                                        pageCount = messages[index].attachments.size,
+                                        modifier = Modifier.fillMaxSize(),
+                                        state = pagerState
+                                    ) { page ->
+                                        Box(Modifier.background(color = Color.Gray)) {
+                                            AsyncImage(
+                                                model = if(messages[index].attachments.isNotEmpty())
+                                                ImageRequest.Builder(LocalContext.current)
+                                                    .data(messages[index].attachments[page].url)
+                                                    .crossfade(true)
+                                                    .build()
+                                                else
+                                                    null,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .clip(RectangleShape)
+                                                    .height(512.dp)
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        Modifier
+                                            .padding(4.dp)
+                                            .background(
+                                                Color.DarkGray,
+                                                shape = MaterialTheme.shapes.medium
+                                            ),
+                                    ) {
+                                        Text(
+                                            text = (
+                                                    (pagerState.currentPage + 1).toString()
+                                                            + " / "
+                                                            + messages[index].attachments.size),
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 8.dp)
                                         )
                                     }
-                                }
-                                Row(
-                                    Modifier
-                                        .padding(4.dp)
-                                        .background(
-                                            Color.DarkGray,
-                                            shape = MaterialTheme.shapes.medium
-                                        ),
-                                ) {
-                                    Text(
-                                        text = (
-                                                (pagerState.currentPage + 1).toString()
-                                                        + " / "
-                                                        + messages[index].attachments.size),
-                                        color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 8.dp)
-                                    )
-                                }
 
+                                }
                             }
                             Text(
                                 text = TimeConverter.longToLocalTime(messages[index].date),

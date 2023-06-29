@@ -88,13 +88,19 @@ fun Friends() {
         mutableStateListOf<FriendDTO>()
     }
     val isFriendPendingListEmpty = remember {
-        mutableStateOf(false)
+        derivedStateOf {
+            friendPendingList.isEmpty()
+        }
     }
     val isFriendSentListEmpty = remember {
-        mutableStateOf(false)
+        derivedStateOf {
+            friendSentList.isEmpty()
+        }
     }
     val isFriendListEmpty = remember {
-        mutableStateOf(false)
+        derivedStateOf {
+            friendList.isEmpty()
+        }
     }
 
     val friendsCount = remember {
@@ -150,19 +156,16 @@ fun Friends() {
                         2 -> {
                             friendSentList.clear()
                             friendSentList.addAll(response.body()!!)
-                            isFriendSentListEmpty.value = friendSentList.isEmpty()
                         }
 
                         1 -> {
                             friendPendingList.clear()
                             friendPendingList.addAll(response.body()!!)
-                            isFriendPendingListEmpty.value = friendPendingList.isEmpty()
                         }
 
                         else -> {
                             friendList.clear()
                             friendList.addAll(response.body()!!)
-                            isFriendListEmpty.value = friendList.isEmpty()
                         }
                     }
 
@@ -218,28 +221,14 @@ fun Friends() {
 
     fun acceptFriendRequest() {
         val userApi = UserApiImpl()
-        val currentList:MutableList<FriendDTO>
-        when (pageState.currentPage) {
-            2 -> {
-                currentList = friendSentList
-            }
-
-            1 -> {
-                currentList = friendPendingList
-            }
-
-            else -> {
-                currentList = friendList
-            }
-        }
-        val response = userApi.acceptFriendRequest(User.USER_ID!!,currentList[clickedItem.value].id )
+        val response = userApi.acceptFriendRequest(User.USER_ID!!,friendPendingList[clickedItem.value].id )
         response.enqueue(object : Callback<FriendDTO> {
             override fun onResponse(
                 call: Call<FriendDTO>,
                 response: Response<FriendDTO>
             ) {
                 if (response.code() == 201) {
-                    currentList.removeAt(clickedItem.value)
+                    friendPendingList.removeAt(clickedItem.value)
                     friendList.add(response.body()!!)
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -410,7 +399,7 @@ fun Friends() {
 fun FriendList(
     friendList: MutableList<FriendDTO>,
     friendsCount: State<Int>,
-    isFriendListEmpty: MutableState<Boolean>,
+    isFriendListEmpty: State<Boolean>,
     snackBarState: MutableState<Boolean>,
     errorMessage: MutableState<String>,
     clickedItem: MutableState<Int>,
