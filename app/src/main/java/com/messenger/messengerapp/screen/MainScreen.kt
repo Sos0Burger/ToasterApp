@@ -35,10 +35,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.messenger.messengerapp.R
+import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.screen.mainSubscreen.Chat
+import com.messenger.messengerapp.screen.mainSubscreen.CreatePostScreen
 import com.messenger.messengerapp.screen.mainSubscreen.Friends
 import com.messenger.messengerapp.screen.mainSubscreen.News
+import com.messenger.messengerapp.screen.mainSubscreen.Profile
 import com.messenger.messengerapp.screen.mainSubscreen.Settings
 import com.messenger.messengerapp.ui.theme.Orange
 
@@ -97,11 +100,16 @@ fun MainScreen() {
             composable("friends") {
                 Friends()
             }
-            composable("profile") {
-                News()
+            composable("profile/{userId}") { backStackEntry ->
+                Profile(backStackEntry.arguments?.getString("userId")!!){
+                    navController.navigate("postCreation")
+                }
             }
             composable("settings") {
                 Settings()
+            }
+            composable("postCreation"){
+                CreatePostScreen(navController)
             }
         }
         Row(
@@ -185,7 +193,7 @@ fun MainScreen() {
             IconButton(
                 onClick = {
                     currentScreen.value = "profile"
-                    /*TODO*/
+                    navController.navigate("profile/"+User.USER_ID!!)
                 },
                 colors = IconButtonDefaults.iconButtonColors(
                     contentColor =

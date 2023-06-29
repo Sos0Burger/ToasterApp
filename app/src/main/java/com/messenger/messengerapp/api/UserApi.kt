@@ -2,7 +2,9 @@ package com.messenger.messengerapp.api
 
 import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
+import com.messenger.messengerapp.dto.ResponsePostDTO
 import com.messenger.messengerapp.dto.UserDTO
+import com.messenger.messengerapp.dto.UserProfileDTO
 import com.messenger.messengerapp.dto.UserSettingsDTO
 import retrofit2.Call
 import retrofit2.http.Body
@@ -16,7 +18,7 @@ import retrofit2.http.Query
 
 interface UserApi {
     @POST("user")
-    fun registration(@Body userDTO: UserDTO): Call<Unit>
+    fun registration(@Body userDTO: UserDTO): Call<UserProfileDTO>
 
     @GET("user/auth")
     fun auth(@Header("email") email:String, @Header("hash") hash:String): Call<Any>
@@ -34,7 +36,7 @@ interface UserApi {
     fun getSent(@Path("id") id:Int):Call<List<FriendDTO>>
 
     @POST("user/friends/{receiverid}/{senderid}")
-    fun acceptFriendRequest(@Path("receiverid") receiverid: Int, @Path("senderid") senderid: Int) : Call<Unit>
+    fun acceptFriendRequest(@Path("receiverid") receiverid: Int, @Path("senderid") senderid: Int) : Call<FriendDTO>
 
     @PUT("/user/{id}/picture")
     fun updatePicture(@Path("id") id:Int, @Body auth:AuthDTO, @Header("url") url:String) : Call<Unit>
@@ -47,5 +49,11 @@ interface UserApi {
 
     @PUT("/user/{id}/firebase")
     fun updateToken(@Path("id")id:Int, @Query("token") token:String) : Call<Unit>
+
+    @GET("/user/{id}")
+    fun getUser(@Path("id") id:Int):Call<UserProfileDTO>
+
+    @GET("/user/{id}/feed")
+    fun getFeed(@Path("id") id:Int, @Query("page")page:Int) : Call<List<ResponsePostDTO>>
 
 }

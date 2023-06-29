@@ -8,12 +8,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -62,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.MessageApiImpl
@@ -130,11 +135,6 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     val inputEnabled = remember {
         mutableStateOf(true)
     }
-    val messageCount = remember {
-        derivedStateOf {
-            messages.size
-        }
-    }
 
     fun getMessages(page: Int) {
         val messageApi = MessageApiImpl()
@@ -183,13 +183,19 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
                 ) {
                     AsyncImage(
-                        model = friendDTO.image
-                            ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                        model = if (friendDTO.image == null)
+                            "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                        else
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(friendDTO.image)
+                                .crossfade(true)
+                                .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
+                            .background(color = Color.DarkGray)
                     )
                     Column {
                         Text(
@@ -211,7 +217,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                 reverseLayout = true,
                 state = messageScrollState
             ) {
-                items(count = messageCount.value) { index ->
+                items(count = messages.size) { index ->
                     Row(
                         horizontalArrangement = if (messages[index].sender.id == User.USER_ID) Arrangement.End else Arrangement.Start,
                         modifier = Modifier.fillMaxWidth(1f)
@@ -240,11 +246,50 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                                 modifier = Modifier.padding(horizontal = 4.dp),
                                 fontSize = 16.sp
                             )
-                            HorizontalPager(pageCount = messages[index].attachments.size) { page ->
-                                AsyncImage(
-                                    model = messages[index].attachments[page].url,
-                                    contentDescription = null
-                                )
+                            if(messages[index].attachments.isNotEmpty()) {
+                                val pagerState = rememberPagerState()
+                                Box() {
+                                    HorizontalPager(
+                                        pageCount = messages[index].attachments.size,
+                                        modifier = Modifier.fillMaxSize(),
+                                        state = pagerState
+                                    ) { page ->
+                                        Box(Modifier.background(color = Color.Gray)) {
+                                            AsyncImage(
+                                                model = if(messages[index].attachments.isNotEmpty())
+                                                ImageRequest.Builder(LocalContext.current)
+                                                    .data(messages[index].attachments[page].url)
+                                                    .crossfade(true)
+                                                    .build()
+                                                else
+                                                    null,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .clip(RectangleShape)
+                                                    .height(512.dp)
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        Modifier
+                                            .padding(4.dp)
+                                            .background(
+                                                Color.DarkGray,
+                                                shape = MaterialTheme.shapes.medium
+                                            ),
+                                    ) {
+                                        Text(
+                                            text = (
+                                                    (pagerState.currentPage + 1).toString()
+                                                            + " / "
+                                                            + messages[index].attachments.size),
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 8.dp)
+                                        )
+                                    }
+
+                                }
                             }
                             Text(
                                 text = TimeConverter.longToLocalTime(messages[index].date),

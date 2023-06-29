@@ -5,6 +5,7 @@ package com.messenger.messengerapp.screen.mainSubscreen
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
 import com.google.accompanist.swiperefresh.SwipeRefreshState
@@ -86,13 +88,19 @@ fun Friends() {
         mutableStateListOf<FriendDTO>()
     }
     val isFriendPendingListEmpty = remember {
-        mutableStateOf(false)
+        derivedStateOf {
+            friendPendingList.isEmpty()
+        }
     }
     val isFriendSentListEmpty = remember {
-        mutableStateOf(false)
+        derivedStateOf {
+            friendSentList.isEmpty()
+        }
     }
     val isFriendListEmpty = remember {
-        mutableStateOf(false)
+        derivedStateOf {
+            friendList.isEmpty()
+        }
     }
 
     val friendsCount = remember {
@@ -136,7 +144,7 @@ fun Friends() {
                     User.USER_ID!!
                 )
 
-                else -> userApi.getFriends(User.USER_ID!!)
+                else -> userApi.getFriends(User.USER_ID?:-1)
             }
         response.enqueue(object : Callback<List<FriendDTO>> {
             override fun onResponse(
@@ -148,19 +156,16 @@ fun Friends() {
                         2 -> {
                             friendSentList.clear()
                             friendSentList.addAll(response.body()!!)
-                            isFriendSentListEmpty.value = friendSentList.isEmpty()
                         }
 
                         1 -> {
                             friendPendingList.clear()
                             friendPendingList.addAll(response.body()!!)
-                            isFriendPendingListEmpty.value = friendPendingList.isEmpty()
                         }
 
                         else -> {
                             friendList.clear()
                             friendList.addAll(response.body()!!)
-                            isFriendListEmpty.value = friendList.isEmpty()
                         }
                     }
 
@@ -192,7 +197,7 @@ fun Friends() {
                 response: Response<FriendDTO>
             ) {
                 if (response.code() == 201) {
-                    friendList.add(response.body()!!)
+                    friendSentList.add(response.body()!!)
                     friendId.value = ""
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -216,28 +221,15 @@ fun Friends() {
 
     fun acceptFriendRequest() {
         val userApi = UserApiImpl()
-        val currentList:MutableList<FriendDTO>
-        when (pageState.currentPage) {
-            2 -> {
-                currentList = friendPendingList
-            }
-
-            1 -> {
-                currentList = friendPendingList
-            }
-
-            else -> {
-                currentList = friendList
-            }
-        }
-        val response = userApi.acceptFriendRequest(User.USER_ID!!,currentList[clickedItem.value].id )
-        response.enqueue(object : Callback<Unit> {
+        val response = userApi.acceptFriendRequest(User.USER_ID!!,friendPendingList[clickedItem.value].id )
+        response.enqueue(object : Callback<FriendDTO> {
             override fun onResponse(
-                call: Call<Unit>,
-                response: Response<Unit>
+                call: Call<FriendDTO>,
+                response: Response<FriendDTO>
             ) {
                 if (response.code() == 201) {
-                    currentList.removeAt(clickedItem.value)
+                    friendPendingList.removeAt(clickedItem.value)
+                    friendList.add(response.body()!!)
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                     Log.d(
@@ -250,7 +242,7 @@ fun Friends() {
                 }
             }
 
-            override fun onFailure(call: Call<Unit>, t: Throwable) {
+            override fun onFailure(call: Call<FriendDTO>, t: Throwable) {
                 Log.d("server", t.message.toString())
                 Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
             }
@@ -407,7 +399,7 @@ fun Friends() {
 fun FriendList(
     friendList: MutableList<FriendDTO>,
     friendsCount: State<Int>,
-    isFriendListEmpty: MutableState<Boolean>,
+    isFriendListEmpty: State<Boolean>,
     snackBarState: MutableState<Boolean>,
     errorMessage: MutableState<String>,
     clickedItem: MutableState<Int>,
@@ -465,13 +457,19 @@ fun FriendList(
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
                             ) {
                                 AsyncImage(
-                                    model = friendList[index].image
-                                        ?: "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg",
+                                    model = if (friendList[index].image == null)
+                                        "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                                    else
+                                        ImageRequest.Builder(LocalContext.current)
+                                            .data(friendList[index].image)
+                                            .crossfade(true)
+                                            .build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .size(96.dp)
                                         .clip(CircleShape)
+                                        .background(color = Color.DarkGray)
                                 )
                                 Column(
                                     modifier = Modifier
