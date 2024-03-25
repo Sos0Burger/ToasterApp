@@ -9,11 +9,11 @@ import retrofit2.Call
 private val postApi = RetrofitClient.getInstance().create(PostApi::class.java)
 
 class PostApiImpl: PostApi {
-    override fun getPost(id: Int, page: Int): Call<List<ResponsePostDTO>> {
-        return postApi.getPost(id, page)
+    override fun getPost(page: Int, token:String): Call<List<ResponsePostDTO>> {
+        return postApi.getPost(page, token)
     }
 
-    override fun createPost(postDTO: RequestPostDTO): Call<ResponsePostDTO> {
-        return postApi.createPost(postDTO)
+    override fun createPost(postDTO: RequestPostDTO, token:String): Call<ResponsePostDTO> {
+        return postApi.createPost(postDTO, token)
     }
 }

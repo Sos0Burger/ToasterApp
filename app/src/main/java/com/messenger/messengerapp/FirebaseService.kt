@@ -50,14 +50,14 @@ class FirebaseService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         Log.d(TAG, "Refreshed token: $token")
-        if(User.USER_ID!=null) {
+        if(User.EMAIL!=null) {
             sendRegistrationToServer(token)
         }
     }
 
     private fun sendRegistrationToServer(token: String?) {
         val userApi = UserApiImpl()
-        val response = userApi.updateToken(User.USER_ID!!, token.toString())
+        val response = userApi.updateToken(token.toString(), User.getCredentials())
         response.enqueue(object :Callback<Unit>{
             override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
                 if (response.code() == 200) {

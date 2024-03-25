@@ -2,7 +2,6 @@ package com.messenger.messengerapp.api.impl
 
 import com.messenger.messengerapp.api.RetrofitClient
 import com.messenger.messengerapp.api.UserApi
-import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.dto.ResponsePostDTO
 import com.messenger.messengerapp.dto.UserDTO
@@ -13,55 +12,55 @@ import retrofit2.Call
 private val userApi = RetrofitClient.getInstance().create(UserApi::class.java)
 
 class UserApiImpl:UserApi {
-    override fun registration(userDTO: UserDTO): Call<UserProfileDTO> {
-        return userApi.registration(userDTO)
+    override fun registration(token:String, userDTO: UserDTO): Call<UserProfileDTO> {
+        return userApi.registration(token, userDTO)
     }
 
-    override fun auth(email: String, hash: String): Call<Any> {
-        return userApi.auth(email, hash)
+    override fun auth(token:String): Call<Any> {
+        return userApi.auth(token)
     }
 
-    override fun getFriends(id: Int): Call<List<FriendDTO>> {
-        return userApi.getFriends(id)
+    override fun getFriends(token:String): Call<List<FriendDTO>> {
+        return userApi.getFriends(token)
     }
 
-    override fun sendFriendRequest(senderid: Int, receiverid: Int): Call<FriendDTO> {
-        return userApi.sendFriendRequest(senderid, receiverid)
+    override fun sendFriendRequest(receiver: Int, token:String): Call<FriendDTO> {
+        return userApi.sendFriendRequest(receiver, token)
     }
 
-    override fun getPending(id: Int): Call<List<FriendDTO>> {
-        return userApi.getPending(id)
+    override fun getPending(token:String): Call<List<FriendDTO>> {
+        return userApi.getPending(token)
     }
 
-    override fun getSent(id: Int): Call<List<FriendDTO>> {
-        return userApi.getSent(id)
+    override fun getSent(token:String): Call<List<FriendDTO>> {
+        return userApi.getSent(token)
     }
 
-    override fun acceptFriendRequest(receiverid: Int, senderid: Int): Call<FriendDTO> {
-        return userApi.acceptFriendRequest(receiverid, senderid)
+    override fun acceptFriendRequest(sender: Int,token:String): Call<FriendDTO> {
+        return userApi.acceptFriendRequest(sender, token)
     }
 
-    override fun updatePicture(id: Int, auth: AuthDTO, url: String): Call<Unit> {
-        return userApi.updatePicture(id, auth, url)
+    override fun updatePicture(file:Int, token:String): Call<Unit> {
+        return userApi.updatePicture(file, token)
     }
 
-    override fun updateNickname(id: Int, auth: AuthDTO, nickname: String): Call<Unit> {
-        return userApi.updateNickname(id, auth, nickname)
+    override fun updateNickname(nickname: String, token:String): Call<Unit> {
+        return userApi.updateNickname(nickname, token)
     }
 
-    override fun getSettings(id: Int): Call<UserSettingsDTO> {
-        return userApi.getSettings(id)
+    override fun getSettings(token:String): Call<UserSettingsDTO> {
+        return userApi.getSettings(token)
     }
 
-    override fun updateToken(id: Int, token: String): Call<Unit> {
-        return userApi.updateToken(id, token)
+    override fun updateToken(firebase: String, token: String ): Call<Unit> {
+        return userApi.updateToken(firebase, token)
     }
 
-    override fun getUser(id: Int): Call<UserProfileDTO> {
-        return userApi.getUser(id)
+    override fun getUser(token:String): Call<UserProfileDTO> {
+        return userApi.getUser(token)
     }
 
-    override fun getFeed(id: Int, page:Int): Call<List<ResponsePostDTO>> {
-        return userApi.getFeed(id, page)
+    override fun getFeed(token:String, page:Int): Call<List<ResponsePostDTO>> {
+        return userApi.getFeed(token, page)
     }
 }

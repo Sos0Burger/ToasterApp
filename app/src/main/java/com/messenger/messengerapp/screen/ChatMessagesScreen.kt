@@ -139,7 +139,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     fun getMessages(page: Int) {
         val messageApi = MessageApiImpl()
 
-        val response = messageApi.getDialog(User.USER_ID!!, friendDTO.id, page)
+        val response = messageApi.getDialog(friendDTO.id, page, User.getCredentials())
         response.enqueue(object : Callback<List<ResponseMessageDTO>> {
             override fun onResponse(
                 call: Call<List<ResponseMessageDTO>>,
@@ -219,15 +219,15 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
             ) {
                 items(count = messages.size) { index ->
                     Row(
-                        horizontalArrangement = if (messages[index].sender.id == User.USER_ID) Arrangement.End else Arrangement.Start,
+                        horizontalArrangement = if (messages[index].sender.id != friendDTO.id) Arrangement.End else Arrangement.Start,
                         modifier = Modifier.fillMaxWidth(1f)
                     ) {
                         Card(
                             shape = MaterialTheme.shapes.medium,
-                            colors = CardDefaults.cardColors(containerColor = if (messages[index].sender.id == User.USER_ID) Color.DarkGray else Graphite),
+                            colors = CardDefaults.cardColors(containerColor = if (messages[index].sender.id != friendDTO.id) Color.DarkGray else Graphite),
                             modifier = Modifier
                                 .padding(
-                                    if (messages[index].sender.id == User.USER_ID) PaddingValues(
+                                    if (messages[index].sender.id != friendDTO.id) PaddingValues(
                                         start = 64.dp,
                                         end = 8.dp,
                                         top = 8.dp,
@@ -446,12 +446,11 @@ fun sendMessage(
     val messageApi = MessageApiImpl()
     val requestMessage = RequestMessageDTO(
         message.value,
-        User.USER_ID!!,
         friendDTO.id,
         Date().time,
         uploadedImageIds
     )
-    val response = messageApi.send(requestMessage)
+    val response = messageApi.send(requestMessage, User.getCredentials())
     response.enqueue(object : Callback<ResponseMessageDTO> {
         override fun onResponse(
             call: Call<ResponseMessageDTO>,

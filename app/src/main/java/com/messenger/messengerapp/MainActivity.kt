@@ -24,10 +24,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPrefs = getSharedPreferences("user", Context.MODE_PRIVATE)
+        User.EMAIL = sharedPrefs.getString("email", null)
+        User.PASSWORD = sharedPrefs.getString("password", null)
         User.USER_ID = sharedPrefs.getInt("user_id", -1)
         if (User.USER_ID == -1) User.USER_ID = null
-        User.EMAIL = sharedPrefs.getString("email", null)
-        User.HASH = sharedPrefs.getString("hash", null)
 
         setContent {
             MessengerAppTheme {

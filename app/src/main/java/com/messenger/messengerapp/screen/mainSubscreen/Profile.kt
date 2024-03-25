@@ -56,7 +56,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun Profile(id: String, onCreatePost: () -> Unit) {
+fun Profile(id:String,onCreatePost: () -> Unit) {
 
     val context = LocalContext.current
 
@@ -88,7 +88,7 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
 
     fun getProfile() {
         val userApi = UserApiImpl()
-        val response = userApi.getUser(id.toInt())
+        val response = userApi.getUser(User.getCredentials())
 
         response.enqueue(object : Callback<UserProfileDTO> {
             override fun onResponse(
@@ -116,7 +116,7 @@ fun Profile(id: String, onCreatePost: () -> Unit) {
     fun getPosts() {
         isPostLoading.value = true
         val postApi = PostApiImpl()
-        val response = postApi.getPost(id.toInt(), postPage.value)
+        val response = postApi.getPost(postPage.value, User.getCredentials())
 
         response.enqueue(object : Callback<List<ResponsePostDTO>> {
             override fun onResponse(

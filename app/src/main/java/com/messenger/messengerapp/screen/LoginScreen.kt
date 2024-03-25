@@ -28,7 +28,6 @@ import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
-import com.messenger.messengerapp.hasher.Hasher
 import com.messenger.messengerapp.infomessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
 import kotlinx.coroutines.delay
@@ -132,7 +131,7 @@ fun LoginScreen(
         delay(500L)
         if (isReg) {
             val userApi = UserApiImpl()
-            val response = userApi.auth(User.EMAIL.toString(), User.HASH.toString())
+            val response = userApi.auth(User.getCredentials())
             response.enqueue(object : Callback<Any> {
                 override fun onResponse(
                     call: Call<Any>, response: Response<Any>
@@ -150,7 +149,7 @@ fun LoginScreen(
                                 }
                                 val token = task.result
                                 val tokenResponse =
-                                    userApi.updateToken(User.USER_ID!!, token)
+                                    userApi.updateToken(token, User.getCredentials())
                                 tokenResponse.enqueue(object : Callback<Unit> {
                                     override fun onResponse(
                                         call: Call<Unit>,
@@ -173,7 +172,6 @@ fun LoginScreen(
                                 Log.d("firebase", "sendRegistrationTokenToServer($token)")
                                 Log.d("firebase", token)
                             })
-                        User.USER_ID = (response.body() as? Double?)?.toInt()
                         onNavigateToMainScreen()
                     } else {
                         val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -214,7 +212,7 @@ fun LoginScreenButton(
             inputEnabled.value = false
             val userApi = UserApiImpl()
             val response = userApi.auth(
-                email.value, Hasher.hash(password.value)
+                User.getCredentials()
             )
             response.enqueue(object : Callback<Any> {
                 override fun onResponse(
@@ -233,7 +231,7 @@ fun LoginScreenButton(
                                 }
                                 val token = task.result
                                 val tokenResponse =
-                                    userApi.updateToken(User.USER_ID!!, token.toString())
+                                    userApi.updateToken(token.toString(), User.getCredentials())
                                 tokenResponse.enqueue(object : Callback<Unit> {
                                     override fun onResponse(
                                         call: Call<Unit>,
@@ -258,11 +256,11 @@ fun LoginScreenButton(
                             })
                         User.USER_ID = (response.body() as? Double?)?.toInt()
                         User.EMAIL = email.value
-                        User.HASH = Hasher.hash(password.value)
+                        User.PASSWORD = password.value
 
                         with(User.sharedPrefs.edit()) {
                             putString("email", User.EMAIL)
-                            putString("hash", User.HASH)
+                            putString("password", User.PASSWORD)
                             apply()
                         }
                         onNavigateToMainScreen()

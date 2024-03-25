@@ -59,7 +59,6 @@ import com.messenger.messengerapp.R
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.PostApiImpl
 import com.messenger.messengerapp.data.User
-import com.messenger.messengerapp.data.User.USER_ID
 import com.messenger.messengerapp.dto.FileDTO
 import com.messenger.messengerapp.dto.RequestPostDTO
 import com.messenger.messengerapp.dto.ResponsePostDTO
@@ -308,14 +307,14 @@ private fun sendPost(
         RequestPostDTO(
             text = text.value,
             date = Date().time,
-            creator = USER_ID!!,
             attachments = uploadedImageIds
-        )
+        ),
+        User.getCredentials()
     )
     response.enqueue(object : Callback<ResponsePostDTO>{
         override fun onResponse(call: Call<ResponsePostDTO>, response: Response<ResponsePostDTO>) {
             if (response.isSuccessful) {
-                navController.navigate("profile/"+ USER_ID!!)
+                navController.navigate("profile/"+ User.USER_ID!!)
             } else {
                 val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
                 Log.d(

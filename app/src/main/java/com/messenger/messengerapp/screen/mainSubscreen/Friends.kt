@@ -139,12 +139,12 @@ fun Friends() {
         val userApi = UserApiImpl()
         val response =
             when (pageState.currentPage) {
-                2 -> userApi.getSent(User.USER_ID!!)
+                2 -> userApi.getSent(User.getCredentials())
                 1 -> userApi.getPending(
-                    User.USER_ID!!
+                    User.getCredentials()
                 )
 
-                else -> userApi.getFriends(User.USER_ID?:-1)
+                else -> userApi.getFriends(User.getCredentials())
             }
         response.enqueue(object : Callback<List<FriendDTO>> {
             override fun onResponse(
@@ -190,7 +190,7 @@ fun Friends() {
 
     fun sendFriendRequest() {
         val userApi = UserApiImpl()
-        val response = userApi.sendFriendRequest(User.USER_ID!!, friendId.value.toInt())
+        val response = userApi.sendFriendRequest(friendId.value.toInt(), User.getCredentials())
         response.enqueue(object : Callback<FriendDTO> {
             override fun onResponse(
                 call: Call<FriendDTO>,
@@ -221,7 +221,7 @@ fun Friends() {
 
     fun acceptFriendRequest() {
         val userApi = UserApiImpl()
-        val response = userApi.acceptFriendRequest(User.USER_ID!!,friendPendingList[clickedItem.value].id )
+        val response = userApi.acceptFriendRequest(friendPendingList[clickedItem.value].id, User.getCredentials() )
         response.enqueue(object : Callback<FriendDTO> {
             override fun onResponse(
                 call: Call<FriendDTO>,

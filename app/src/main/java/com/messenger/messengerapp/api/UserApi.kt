@@ -1,6 +1,5 @@
 package com.messenger.messengerapp.api
 
-import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FriendDTO
 import com.messenger.messengerapp.dto.ResponsePostDTO
 import com.messenger.messengerapp.dto.UserDTO
@@ -12,48 +11,47 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
-import retrofit2.http.Path
 import retrofit2.http.Query
 
 
 interface UserApi {
     @POST("user")
-    fun registration(@Body userDTO: UserDTO): Call<UserProfileDTO>
+    fun registration(@Query("token") token:String, @Body userDTO: UserDTO): Call<UserProfileDTO>
 
     @GET("user/auth")
-    fun auth(@Header("email") email:String, @Header("hash") hash:String): Call<Any>
+    fun auth(@Header("Authorization") h1:String): Call<Any>
 
-    @GET("user/{id}/friends")
-    fun getFriends(@Path(value = "id") id:Int): Call<List<FriendDTO>>
+    @GET("user/friends")
+    fun getFriends(@Header("Authorization") h1:String): Call<List<FriendDTO>>
 
-    @POST("user/friend-request/{senderid}/{receiverid}")
-    fun sendFriendRequest(@Path("senderid") senderid:Int, @Path("receiverid") receiverid:Int) : Call<FriendDTO>
+    @POST("user/friend-request")
+    fun sendFriendRequest(@Query("receiver") receiver:Int, @Header("Authorization") h1:String) : Call<FriendDTO>
 
-    @GET("/user/{id}/pending")
-    fun getPending(@Path("id") id:Int):Call<List<FriendDTO>>
+    @GET("/user/pending")
+    fun getPending(@Header("Authorization") h1:String):Call<List<FriendDTO>>
 
-    @GET("/user/{id}/sent")
-    fun getSent(@Path("id") id:Int):Call<List<FriendDTO>>
+    @GET("/user/sent")
+    fun getSent(@Header("Authorization") h1:String):Call<List<FriendDTO>>
 
-    @POST("user/friends/{receiverid}/{senderid}")
-    fun acceptFriendRequest(@Path("receiverid") receiverid: Int, @Path("senderid") senderid: Int) : Call<FriendDTO>
+    @POST("user/friends")
+    fun acceptFriendRequest(@Query("sender") sender: Int, @Header("Authorization") h1:String) : Call<FriendDTO>
 
     @PUT("/user/{id}/picture")
-    fun updatePicture(@Path("id") id:Int, @Body auth:AuthDTO, @Header("url") url:String) : Call<Unit>
+    fun updatePicture(@Query("file") file:Int, @Header("Authorization") h1:String) : Call<Unit>
 
     @PUT("/user/{id}/nickname")
-    fun updateNickname(@Path("id") id:Int, @Body auth:AuthDTO, @Header("nickname") nickname:String) : Call<Unit>
+    fun updateNickname(@Query("nickname") nickname:String, @Header("Authorization") h1:String) : Call<Unit>
 
     @GET("/user/{id}/settings")
-    fun getSettings(@Path("id") id:Int) : Call<UserSettingsDTO>
+    fun getSettings(@Header("Authorization") h1:String) : Call<UserSettingsDTO>
 
-    @PUT("/user/{id}/firebase")
-    fun updateToken(@Path("id")id:Int, @Query("token") token:String) : Call<Unit>
+    @PUT("/user/firebase")
+    fun updateToken(@Query("token") token:String, @Header("Authorization") h1:String) : Call<Unit>
 
-    @GET("/user/{id}")
-    fun getUser(@Path("id") id:Int):Call<UserProfileDTO>
+    @GET("/user")
+    fun getUser(@Header("Authorization") h1:String):Call<UserProfileDTO>
 
-    @GET("/user/{id}/feed")
-    fun getFeed(@Path("id") id:Int, @Query("page")page:Int) : Call<List<ResponsePostDTO>>
+    @GET("/user/feed")
+    fun getFeed(@Header("Authorization") h1:String, @Query("page")page:Int) : Call<List<ResponsePostDTO>>
 
 }

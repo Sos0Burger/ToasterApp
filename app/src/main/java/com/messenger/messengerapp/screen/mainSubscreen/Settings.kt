@@ -39,7 +39,6 @@ import coil.request.ImageRequest
 import com.messenger.messengerapp.api.impl.FileApiImpl
 import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
-import com.messenger.messengerapp.dto.AuthDTO
 import com.messenger.messengerapp.dto.FileDTO
 import com.messenger.messengerapp.dto.UserSettingsDTO
 import com.messenger.messengerapp.requestbody.InputStreamRequestBody
@@ -92,9 +91,8 @@ fun Settings() {
                 if (fileResponse.code() == 201) {
                     val userApi = UserApiImpl()
                     val userResponse = userApi.updatePicture(
-                        User.USER_ID!!,
-                        AuthDTO(User.EMAIL!!, User.HASH!!),
-                        fileResponse.body()!!.url
+                        fileResponse.body()!!.id,
+                        User.getCredentials()
                     )
                     userResponse.enqueue(object : Callback<Unit> {
                         override fun onResponse(call: Call<Unit>, userResponse: Response<Unit>) {
@@ -146,9 +144,8 @@ fun Settings() {
     fun updateNickname() {
         val userApi = UserApiImpl()
         val response = userApi.updateNickname(
-            User.USER_ID!!,
-            AuthDTO(User.EMAIL!!, User.HASH!!),
-            nickname.value
+            nickname.value,
+            User.getCredentials()
         )
         response.enqueue(object : Callback<Unit> {
             override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
@@ -177,7 +174,7 @@ fun Settings() {
 
     fun getSettings(){
         val userApi = UserApiImpl()
-        val response = userApi.getSettings(User.USER_ID!!)
+        val response = userApi.getSettings(User.getCredentials())
         response.enqueue(object :Callback<UserSettingsDTO>{
             override fun onResponse(
                 call: Call<UserSettingsDTO>,

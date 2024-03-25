@@ -79,7 +79,7 @@ fun Chat(friendDTOShare: MutableState<FriendDTO>, onChatMessages: () -> Unit) {
     fun getFriends() {
         friendList.clear()
         val userApi = UserApiImpl()
-        val response = userApi.getFriends(User.USER_ID!!)
+        val response = userApi.getFriends(User.getCredentials())
         response.enqueue(object : Callback<List<FriendDTO>> {
             override fun onResponse(
                 call: Call<List<FriendDTO>>,

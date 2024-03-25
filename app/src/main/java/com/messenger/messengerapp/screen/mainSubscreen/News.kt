@@ -65,7 +65,7 @@ fun News() {
     fun getPosts() {
         isPostLoading.value = true
         val userApi = UserApiImpl()
-        val response = userApi.getFeed(User.USER_ID ?: -1, postPage.value)
+        val response = userApi.getFeed(User.getCredentials(), postPage.value)
 
         response.enqueue(object : Callback<List<ResponsePostDTO>> {
             override fun onResponse(

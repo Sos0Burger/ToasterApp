@@ -35,7 +35,6 @@ import com.messenger.messengerapp.api.impl.UserApiImpl
 import com.messenger.messengerapp.data.User
 import com.messenger.messengerapp.dto.UserDTO
 import com.messenger.messengerapp.dto.UserProfileDTO
-import com.messenger.messengerapp.hasher.Hasher
 import com.messenger.messengerapp.infomessage.InfoSnackBar
 import com.messenger.messengerapp.ui.theme.Orange
 import org.json.JSONObject
@@ -49,6 +48,9 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
     val passwordRepeat = remember { mutableStateOf("") }
+    val token = remember {
+        mutableStateOf("")
+    }
     val enabled = remember {
         mutableStateOf(
             false
@@ -106,6 +108,8 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
                 }
             }
 
+            EmailInput(token = token)
+
             Spacer(modifier = Modifier.padding(top = 16.dp))
 
             RegistrationButton(
@@ -114,7 +118,8 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
                 email = email,
                 password = password,
                 snackBarState = snackBarState,
-                errorMessage = errorMessage
+                errorMessage = errorMessage,
+                token = token
             ) { onNavigateToLogin() }
         }
         Row(
@@ -191,6 +196,26 @@ fun EmailInput(
             disabledTextColor = Color.White
         ),
         modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EmailInput(token: MutableState<String>) {
+    TextField(
+        value = token.value, onValueChange = { token.value = it },
+        colors = TextFieldDefaults.textFieldColors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            containerColor = Color.Gray,
+            errorIndicatorColor = Color.Transparent,
+            errorSupportingTextColor = Orange,
+            errorLabelColor = Color.DarkGray,
+            errorCursorColor = Orange,
+            disabledIndicatorColor = Color.Transparent,
+            disabledTextColor = Color.White,
+            cursorColor = Orange
+        )
     )
 }
 
@@ -283,6 +308,7 @@ fun RegistrationButton(
     password: MutableState<String>,
     snackBarState: MutableState<Boolean>,
     errorMessage: MutableState<String>,
+    token: MutableState<String>,
     onNavigateToLogin: () -> Unit
 ) {
     val clicked = remember { mutableStateOf(false) }
@@ -294,20 +320,24 @@ fun RegistrationButton(
             val userApi = UserApiImpl()
             val response =
                 userApi.registration(
+                    token = token.value,
                     UserDTO(
                         email = email.value,
-                        password = Hasher.hash(password.value)
+                        password = password.value
                     )
                 )
             response.enqueue(object : Callback<UserProfileDTO> {
-                override fun onResponse(call: Call<UserProfileDTO>, response: Response<UserProfileDTO>) {
+                override fun onResponse(
+                    call: Call<UserProfileDTO>,
+                    response: Response<UserProfileDTO>
+                ) {
                     if (response.code() == 201) {
                         Log.d("server", response.code().toString())
                         User.EMAIL = email.value
-                        User.HASH = Hasher.hash(password.value)
+                        User.PASSWORD = password.value
                         with(User.sharedPrefs.edit()) {
                             putString("email", User.EMAIL)
-                            putString("hash", User.HASH)
+                            putString("password", User.PASSWORD)
                             apply()
                         }
                         onNavigateToLogin()
