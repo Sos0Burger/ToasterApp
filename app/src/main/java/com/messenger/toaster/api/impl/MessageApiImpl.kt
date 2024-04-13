@@ -1,0 +1,19 @@
+package com.messenger.toaster.api.impl
+
+import com.messenger.toaster.api.MessageApi
+import com.messenger.toaster.api.RetrofitClient
+import com.messenger.toaster.dto.RequestMessageDTO
+import com.messenger.toaster.dto.ResponseMessageDTO
+import retrofit2.Call
+
+private val messageApi = RetrofitClient.getInstance().create(MessageApi::class.java)
+
+class MessageApiImpl : MessageApi {
+    override fun send(requestMessageDTO: RequestMessageDTO, token:String) : Call<ResponseMessageDTO> {
+        return messageApi.send(requestMessageDTO, token)
+    }
+
+    override fun getDialog(companion: Int, page: Int, token: String) : Call<List<ResponseMessageDTO>> {
+        return messageApi.getDialog(companion, page, token)
+    }
+}

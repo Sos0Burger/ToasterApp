@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace 'com.messenger.messengerapp'
+    namespace 'com.messenger.toaster'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.messenger.messengerapp"
+        applicationId "com.messenger.toaster"
         minSdk 29
         targetSdk 33
         versionCode 1
