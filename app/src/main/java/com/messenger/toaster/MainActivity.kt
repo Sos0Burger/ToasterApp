@@ -1,6 +1,5 @@
 package com.messenger.toaster
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,7 +22,7 @@ import com.messenger.toaster.ui.theme.ToasterTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedPrefs = getSharedPreferences("user", Context.MODE_PRIVATE)
+        sharedPrefs = getSharedPreferences("user", MODE_PRIVATE)
         User.EMAIL = sharedPrefs.getString("email", null)
         User.PASSWORD = sharedPrefs.getString("password", null)
         User.USER_ID = sharedPrefs.getInt("user_id", -1)

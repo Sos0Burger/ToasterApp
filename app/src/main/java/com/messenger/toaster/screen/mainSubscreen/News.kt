@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -25,6 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.composable.Post
 import com.messenger.toaster.data.User
@@ -37,11 +40,11 @@ import retrofit2.Response
 
 
 @Composable
-fun News() {
+fun News(navController: NavController) {
 
     val context = LocalContext.current
 
-    val posts: MutableList<ResponsePostDTO> = remember {
+    val posts: MutableList<MutableState<ResponsePostDTO>> = remember {
         mutableStateListOf()
     }
     val postCount = remember {
@@ -73,7 +76,7 @@ fun News() {
                 response: Response<List<ResponsePostDTO>>
             ) {
                 if (response.isSuccessful) {
-                    posts.addAll(response.body()!!)
+                    response.body()!!.forEach { posts.add(mutableStateOf(it)) }
                     postPage.value++
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -99,7 +102,8 @@ fun News() {
             .fillMaxSize()
             .padding(bottom = 58.dp), color = Color.Black
     ) {
-        LazyColumn(modifier = Modifier.fillMaxSize(1f)
+        LazyColumn(modifier = Modifier
+            .fillMaxSize(1f)
             .padding(horizontal = 8.dp),
         contentPadding = PaddingValues(vertical = 4.dp)) {
             item {
@@ -117,7 +121,7 @@ fun News() {
                 }
             }
             items(count = postCount.value) { index ->
-                Post(post = posts[index])
+                Post(post = posts[index], true, navController)
             }
         }
 
@@ -132,5 +136,5 @@ fun News() {
 @Preview(showBackground = true)
 @Composable
 fun NewsPreview() {
-    News()
+    News(rememberNavController())
 }

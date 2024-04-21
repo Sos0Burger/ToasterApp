@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "902953394070",
-    "project_id": "messengerapp-43c4c",
-    "storage_bucket": "messengerapp-43c4c.appspot.com"
+    "project_number": "397991850475",
+    "project_id": "toasterappsocial",
+    "storage_bucket": "toasterappsocial.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:902953394070:android:df080a1f75564f38bd47b7",
+        "mobilesdk_app_id": "1:397991850475:android:698a6ced1bc285da8d69ae",
         "android_client_info": {
           "package_name": "com.messenger.toaster"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "902953394070-s7gs61lptfpbmfn6482mc1odggdb5tvc.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBP85psybCG9XTass4arGrtZyEfhscjcxo"
+          "current_key": "AIzaSyC-9JvoPWqexGInYPHL50tm5YXQ9ocK4jY"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "902953394070-s7gs61lptfpbmfn6482mc1odggdb5tvc.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

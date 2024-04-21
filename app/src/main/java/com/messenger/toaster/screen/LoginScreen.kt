@@ -215,7 +215,7 @@ fun LoginScreenButton(
                 override fun onResponse(
                     call: Call<Int>, response: Response<Int>
                 ) {
-                    if (response.code() == 200) {
+                    if (response.isSuccessful) {
                         FirebaseMessaging.getInstance().token.addOnCompleteListener(
                             OnCompleteListener { task ->
                                 if (!task.isSuccessful) {
@@ -262,14 +262,21 @@ fun LoginScreenButton(
                         }
                         onNavigateToMainScreen()
                     } else {
-                        val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
-                        Log.d(
-                            "server",
-                            response.code().toString() + " " + jsonObj.getString("message")
-                        )
-                        errorMessage.value = jsonObj.getString("message")
-                        snackBarState.value = true
-                        inputEnabled.value = true
+                        if(response.code() == 401){
+                            errorMessage.value = "Пользователь не найден"
+                            snackBarState.value = true
+                            inputEnabled.value = true
+                        }
+                        else {
+                            val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                            Log.d(
+                                "server",
+                                response.code().toString() + " " + jsonObj.getString("message")
+                            )
+                            errorMessage.value = jsonObj.getString("message")
+                            snackBarState.value = true
+                            inputEnabled.value = true
+                        }
                     }
                 }
 

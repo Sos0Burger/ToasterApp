@@ -25,11 +25,13 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +42,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.messenger.toaster.R
@@ -57,15 +61,15 @@ import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun Profile(id:String,onCreatePost: () -> Unit) {
+fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) {
 
     val context = LocalContext.current
 
-    val profile = remember {
+    val profile = remember{
         mutableStateOf(UserProfileDTO(-1, "Не загружен", ArrayList(), null))
     }
 
-    val posts: MutableList<ResponsePostDTO> = remember {
+    val posts: MutableList<MutableState<ResponsePostDTO>> = remember {
         mutableStateListOf()
     }
 
@@ -83,7 +87,7 @@ fun Profile(id:String,onCreatePost: () -> Unit) {
             !postScrollState.canScrollForward && (posts.size >= postCount.value * 15) && (posts.size != 0 || postPage.value == 0)
         }
     }
-    val isPostLoading = remember {
+    val isPostLoading = rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -117,7 +121,7 @@ fun Profile(id:String,onCreatePost: () -> Unit) {
     fun getPosts() {
         isPostLoading.value = true
         val postApi = PostApiImpl()
-        val response = postApi.getPost(postPage.value, User.getCredentials())
+        val response = postApi.getPosts(postPage.value, User.getCredentials())
 
         response.enqueue(object : Callback<List<ResponsePostDTO>> {
             override fun onResponse(
@@ -125,7 +129,7 @@ fun Profile(id:String,onCreatePost: () -> Unit) {
                 response: Response<List<ResponsePostDTO>>
             ) {
                 if (response.isSuccessful) {
-                    posts.addAll(response.body()!!)
+                    response.body()!!.forEach { posts.add(mutableStateOf(it)) }
                     postPage.value++
                 } else {
                     val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
@@ -183,9 +187,11 @@ fun Profile(id:String,onCreatePost: () -> Unit) {
                                 "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
                             else
                                 ImageRequest.Builder(LocalContext.current)
-                                    .data(RetrofitClient.getInstance().baseUrl().toString()+
-                                            "file/"+
-                                            profile.value.image!!.id)
+                                    .data(
+                                        RetrofitClient.getInstance().baseUrl().toString() +
+                                                "file/" +
+                                                profile.value.image!!.id
+                                    )
                                     .crossfade(true)
                                     .build(),
                             contentDescription = null,
@@ -228,9 +234,12 @@ fun Profile(id:String,onCreatePost: () -> Unit) {
                                             "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
                                         else
                                             ImageRequest.Builder(LocalContext.current)
-                                                .data(RetrofitClient.getInstance().baseUrl().toString()+
-                                                        "file/"+
-                                                        profile.value.friends[index].image!!.id)
+                                                .data(
+                                                    RetrofitClient.getInstance().baseUrl()
+                                                        .toString() +
+                                                            "file/" +
+                                                            profile.value.friends[index].image!!.id
+                                                )
                                                 .crossfade(true)
                                                 .build(),
                                         contentDescription = null,
@@ -275,7 +284,7 @@ fun Profile(id:String,onCreatePost: () -> Unit) {
                 }
 
                 items(count = postCount.value) { index ->
-                    Post(post = posts[index])
+                    Post(post = posts[index], true, navController = navController)
                 }
 
                 item {
@@ -303,5 +312,5 @@ fun Profile(id:String,onCreatePost: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun ProfilePreview() {
-    Profile("0") {}
+    Profile("0", rememberNavController()) {}
 }

@@ -250,10 +250,9 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                                 fontSize = 16.sp
                             )
                             if(messages[index].attachments.isNotEmpty()) {
-                                val pagerState = rememberPagerState()
+                                val pagerState = rememberPagerState(){messages[index].attachments.size}
                                 Box() {
                                     HorizontalPager(
-                                        pageCount = messages[index].attachments.size,
                                         modifier = Modifier.fillMaxSize(),
                                         state = pagerState
                                     ) { page ->

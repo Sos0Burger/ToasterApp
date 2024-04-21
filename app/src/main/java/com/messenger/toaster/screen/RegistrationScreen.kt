@@ -75,11 +75,12 @@ fun RegistrationScreen(onNavigateToLogin: () -> Unit) {
             && password.value.matches(Regex("[A-z0-9]{8,32}"))
             && password.value == passwordRepeat.value
             && token.value.isNotEmpty()
-    LaunchedEffect(Unit) {
-        while (timer.value > 0) {
-            timer.value -= 0.1F
+    LaunchedEffect(timer.value) {
+        while (timer.value > 0F) {
+            timer.value -= 0.01F
             delay(100)
         }
+        timer.value = 0F
     }
     Surface(
         modifier = Modifier.fillMaxSize(),

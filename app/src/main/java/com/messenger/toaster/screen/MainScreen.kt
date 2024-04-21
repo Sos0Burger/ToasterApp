@@ -87,7 +87,7 @@ fun MainScreen() {
             startDestination = "news"
         ) {
             composable("news") {
-                News()
+                News(navController = navController)
             }
             composable("chat") {
                 Chat(friendDTOShare) {
@@ -101,15 +101,21 @@ fun MainScreen() {
                 Friends()
             }
             composable("profile/{userId}") { backStackEntry ->
-                Profile(backStackEntry.arguments?.getString("userId")!!){
+                Profile(backStackEntry.arguments?.getString("userId")!!, navController) {
                     navController.navigate("postCreation")
                 }
             }
             composable("settings") {
                 Settings()
             }
-            composable("postCreation"){
+            composable("postCreation") {
                 CreatePostScreen(navController)
+            }
+            composable("post/{postID}") { backStackEntry ->
+                FullPost(
+                    id = backStackEntry.arguments?.getString("postID")!!,
+                    navController = navController
+                )
             }
         }
         Row(
@@ -193,7 +199,7 @@ fun MainScreen() {
             IconButton(
                 onClick = {
                     currentScreen.value = "profile"
-                    navController.navigate("profile/"+User.USER_ID!!)
+                    navController.navigate("profile/" + User.USER_ID!!)
                 },
                 colors = IconButtonDefaults.iconButtonColors(
                     contentColor =

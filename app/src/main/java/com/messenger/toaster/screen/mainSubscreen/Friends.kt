@@ -130,7 +130,7 @@ fun Friends() {
     val snackBarState = remember {
         mutableStateOf(false)
     }
-    val pageState = rememberPagerState()
+    val pageState = rememberPagerState(){3}
 
     val coroutineScope = rememberCoroutineScope()
     val buttonColors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
@@ -294,7 +294,6 @@ fun Friends() {
                 }
             }
             HorizontalPager(
-                pageCount = 3,
                 state = pageState,
                 modifier = Modifier.fillMaxSize(1f)
             ) { page ->
