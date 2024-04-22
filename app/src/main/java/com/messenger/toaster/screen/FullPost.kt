@@ -107,7 +107,7 @@ fun FullPost(id: String, navController: NavController) {
     }
 
     fun getPost() {
-        isPostLoading.value = true
+        isPostLoading.value = false
         val postApi = PostApiImpl()
         val response = postApi.getPost(id.toInt(), User.getCredentials())
         response.enqueue(object : Callback<ResponsePostDTO> {
@@ -136,7 +136,7 @@ fun FullPost(id: String, navController: NavController) {
     }
 
     fun getComments() {
-        isCommentsLoading.value = true
+        isCommentsLoading.value = false
         val postApi = PostApiImpl()
         val response = postApi.getPostComments(
             id.toInt(),

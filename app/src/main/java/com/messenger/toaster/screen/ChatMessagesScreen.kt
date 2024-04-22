@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,11 +35,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -71,18 +74,20 @@ import com.messenger.toaster.R
 import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.api.impl.FileApiImpl
 import com.messenger.toaster.api.impl.MessageApiImpl
+import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.converter.TimeConverter
+import com.messenger.toaster.data.FriendStatus
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.FriendDTO
 import com.messenger.toaster.dto.RequestMessageDTO
 import com.messenger.toaster.dto.ResponseMessageDTO
+import com.messenger.toaster.dto.UserProfileDTO
 import com.messenger.toaster.requestbody.InputStreamRequestBody
 import com.messenger.toaster.ui.theme.Graphite
 import com.messenger.toaster.ui.theme.Orange
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -91,7 +96,7 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ChatMessagesScreen(friendDTO: FriendDTO) {
+fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
     val messages: MutableList<ResponseMessageDTO> = remember {
         mutableStateListOf()
     }
@@ -107,12 +112,18 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     }
     val context = LocalContext.current
 
+    val profile = remember {
+        mutableStateOf(UserProfileDTO(id.toInt(), null, ArrayList(), null, FriendStatus.NOTHING))
+    }
 
     val message = remember {
         mutableStateOf("")
     }
     val messagePage = remember {
         mutableStateOf(0)
+    }
+    val isProfileLoading = remember {
+        mutableStateOf(true)
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -140,22 +151,24 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
     fun getMessages(page: Int) {
         val messageApi = MessageApiImpl()
 
-        val response = messageApi.getDialog(friendDTO.id, page, User.getCredentials())
+        val response = messageApi.getDialog(id.toInt(), page, User.getCredentials())
         response.enqueue(object : Callback<List<ResponseMessageDTO>> {
             override fun onResponse(
                 call: Call<List<ResponseMessageDTO>>,
                 response: Response<List<ResponseMessageDTO>>
             ) {
-                if (response.code() == 200) {
+                if (response.isSuccessful) {
                     messages.addAll(response.body()!!)
                     messagePage.value += 1
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj =
+                        if (response.errorBody() != null) response.errorBody()!!.byteString()
+                            .utf8() else response.code().toString()
                     Log.d(
                         "server",
                         response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -166,6 +179,39 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
         })
     }
 
+    fun getProfile() {
+        isProfileLoading.value = false
+        val userApi = UserApiImpl()
+        val response = userApi.getUserProfile(id.toInt(), User.getCredentials())
+        response.enqueue(object : Callback<UserProfileDTO> {
+            override fun onResponse(
+                call: Call<UserProfileDTO>,
+                response: Response<UserProfileDTO>
+            ) {
+                if (response.isSuccessful) {
+                    profile.value = response.body()!!
+                } else {
+                    val jsonObj =
+                        if (response.errorBody() != null) response.errorBody()!!.byteString()
+                            .utf8() else response.code().toString()
+                    Log.d(
+                        "server",
+                        response.code().toString()
+                    )
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<UserProfileDTO>, t: Throwable) {
+                Log.d("server", t.message.toString())
+                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    if (isProfileLoading.value) {
+        getProfile()
+    }
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -176,21 +222,37 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                 .padding(bottom = 8.dp)
                 .fillMaxSize(1f)
         ) {
-            Row(horizontalArrangement = Arrangement.SpaceAround) {
-                Button(
-                    onClick = {/*todo*/ },
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(
+                    onClick = { onBack() },
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = Orange)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back_arrow),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                OutlinedButton(
+                    onClick = { onProfile() },
                     shape = RectangleShape,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent),
+                    contentPadding = PaddingValues(1.dp),
+                    border = BorderStroke(0.dp, Color.Transparent)
                 ) {
                     AsyncImage(
-                        model = if (friendDTO.image == null)
+                        model = if (profile.value.image == null)
                             "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
                         else
                             ImageRequest.Builder(LocalContext.current)
-                                .data(RetrofitClient.getInstance().baseUrl().toString()+
-                                        "file/"+
-                                        friendDTO.image.id)
+                                .data(
+                                    RetrofitClient.getInstance().baseUrl().toString() +
+                                            "file/" +
+                                            profile.value.image!!.id
+                                )
                                 .crossfade(true)
                                 .build(),
                         contentDescription = null,
@@ -202,106 +264,140 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                     )
                     Column {
                         Text(
-                            text = friendDTO.nickname ?: "Альтернативное имя не указано",
-                            fontSize = 20.sp,
+                            text = profile.value.nickname ?: "Альтернативное имя не указано",
+                            fontSize = 16.sp,
                             color = Color.White
                         )
                         Text(
-                            text = "ID: " + friendDTO.id.toString(),
+                            text = "ID: " + profile.value.id.toString(),
                             fontSize = 12.sp,
                             color = Color.White
                         )
                     }
                 }
+                IconButton(onClick = {
+                    getProfile()
+                    messages.clear()
+                    messagePage.value = 0
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.update),
+                        contentDescription = null,
+                        tint = Orange
+                    )
+                }
             }
+            Divider(
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 2.dp, end = 16.dp, start = 16.dp)
+            )
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 reverseLayout = true,
                 state = messageScrollState
             ) {
-                items(count = messages.size) { index ->
-                    Row(
-                        horizontalArrangement = if (messages[index].sender.id != friendDTO.id) Arrangement.End else Arrangement.Start,
-                        modifier = Modifier.fillMaxWidth(1f)
-                    ) {
-                        Card(
-                            shape = MaterialTheme.shapes.medium,
-                            colors = CardDefaults.cardColors(containerColor = if (messages[index].sender.id != friendDTO.id) Color.DarkGray else Graphite),
-                            modifier = Modifier
-                                .padding(
-                                    if (messages[index].sender.id != friendDTO.id) PaddingValues(
-                                        start = 64.dp,
-                                        end = 8.dp,
-                                        top = 8.dp,
-                                        bottom = 8.dp
-                                    ) else PaddingValues(
-                                        start = 8.dp,
-                                        end = 64.dp,
-                                        top = 8.dp,
-                                        bottom = 8.dp
-                                    )
-                                )
+                items(
+                    key = { index -> messages.getOrNull(index)?.id ?: index },
+                    count = messages.size
+                ) { index ->
+                    if(messages.getOrNull(index)!=null) {
+
+                        Row(
+                            horizontalArrangement = if (messages[index].sender.id != profile.value.id) Arrangement.End else Arrangement.Start,
+                            modifier = Modifier.fillMaxWidth(1f)
                         ) {
-                            Text(
-                                text = messages[index].text ?: "",
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 4.dp),
-                                fontSize = 16.sp
-                            )
-                            if(messages[index].attachments.isNotEmpty()) {
-                                val pagerState = rememberPagerState(){messages[index].attachments.size}
-                                Box() {
-                                    HorizontalPager(
-                                        modifier = Modifier.fillMaxSize(),
-                                        state = pagerState
-                                    ) { page ->
-                                        Box(Modifier.background(color = Color.Gray)) {
-                                            AsyncImage(
-                                                model = if(messages[index].attachments.isNotEmpty())
-                                                ImageRequest.Builder(LocalContext.current)
-                                                    .data(RetrofitClient.getInstance().baseUrl().toString()+
-                                                            "file/"+
-                                                            messages[index].attachments[page].id)
-                                                    .crossfade(true)
-                                                    .build()
-                                                else
-                                                    null,
-                                                contentDescription = null,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier
-                                                    .clip(RectangleShape)
-                                                    .height(512.dp)
+                            Card(
+                                shape = MaterialTheme.shapes.medium,
+                                colors = CardDefaults.cardColors(containerColor = if (messages[index].sender.id != profile.value.id) Color.DarkGray else Graphite),
+                                modifier = Modifier
+                                    .padding(
+                                        if (messages[index].sender.id != profile.value.id) PaddingValues(
+                                            start = 64.dp,
+                                            end = 8.dp,
+                                            top = 8.dp,
+                                            bottom = 8.dp
+                                        ) else PaddingValues(
+                                            start = 8.dp,
+                                            end = 64.dp,
+                                            top = 8.dp,
+                                            bottom = 8.dp
+                                        )
+                                    )
+                            ) {
+                                Text(
+                                    text = messages[index].text ?: "",
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 4.dp),
+                                    fontSize = 16.sp
+                                )
+                                if (messages[index].attachments.isNotEmpty()) {
+                                    val pagerState = rememberPagerState(
+                                        initialPageOffsetFraction = 0.5F, // Необязательно, для предзагрузки страниц
+                                        initialPage = 0 // Индекс начальной страницы
+                                    ){try {
+                                        messages[index].attachments.size
+                                    }catch (ex:IndexOutOfBoundsException){
+                                        0
+                                    }
+                                        }
+
+                                    Box() {
+                                        HorizontalPager(
+                                            modifier = Modifier.fillMaxSize(),
+                                            state = pagerState
+                                        ) { page ->
+                                            Box(Modifier.background(color = Color.Gray)) {
+                                                AsyncImage(
+                                                    model = if (messages[index].attachments.isNotEmpty())
+                                                        ImageRequest.Builder(LocalContext.current)
+                                                            .data(
+                                                                RetrofitClient.getInstance()
+                                                                    .baseUrl()
+                                                                    .toString() +
+                                                                        "file/" +
+                                                                        messages[index].attachments[page].id
+                                                            )
+                                                            .crossfade(true)
+                                                            .build()
+                                                    else
+                                                        null,
+                                                    contentDescription = null,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier
+                                                        .clip(RectangleShape)
+                                                        .height(512.dp)
+                                                )
+                                            }
+                                        }
+                                        Row(
+                                            Modifier
+                                                .padding(4.dp)
+                                                .background(
+                                                    Color.DarkGray,
+                                                    shape = MaterialTheme.shapes.medium
+                                                ),
+                                        ) {
+                                            Text(
+                                                text = (
+                                                        (pagerState.currentPage + 1).toString()
+                                                                + " / "
+                                                                + messages[index].attachments.size),
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 8.dp)
                                             )
                                         }
-                                    }
-                                    Row(
-                                        Modifier
-                                            .padding(4.dp)
-                                            .background(
-                                                Color.DarkGray,
-                                                shape = MaterialTheme.shapes.medium
-                                            ),
-                                    ) {
-                                        Text(
-                                            text = (
-                                                    (pagerState.currentPage + 1).toString()
-                                                            + " / "
-                                                            + messages[index].attachments.size),
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 8.dp)
-                                        )
-                                    }
 
+                                    }
                                 }
+                                Text(
+                                    text = TimeConverter.longToLocalTime(messages[index].date),
+                                    textAlign = TextAlign.End,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(all = 4.dp),
+                                    color = Color.White
+                                )
                             }
-                            Text(
-                                text = TimeConverter.longToLocalTime(messages[index].date),
-                                textAlign = TextAlign.End,
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(all = 4.dp),
-                                color = Color.White
-                            )
                         }
                     }
                 }
@@ -384,7 +480,11 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                             sendMessage(
                                 context,
                                 message,
-                                friendDTO,
+                                FriendDTO(
+                                    profile.value.id,
+                                    profile.value.nickname,
+                                    profile.value.image
+                                ),
                                 messages,
                                 ArrayList(),
                                 imageUris,
@@ -397,7 +497,11 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
                                 messages = messages,
                                 message = message,
                                 inputEnabled = inputEnabled,
-                                friendDTO = friendDTO
+                                friendDTO = FriendDTO(
+                                    profile.value.id,
+                                    profile.value.nickname,
+                                    profile.value.image
+                                )
                             )
                         }
 
@@ -435,7 +539,7 @@ fun ChatMessagesScreen(friendDTO: FriendDTO) {
 @Preview(showBackground = true)
 @Composable
 fun ChatMessagesScreenPreview() {
-    ChatMessagesScreen(FriendDTO(16, "Анонимус228", null))
+    ChatMessagesScreen("1", onBack = {}, onProfile = {})
 }
 
 fun sendMessage(
@@ -465,12 +569,14 @@ fun sendMessage(
                 message.value = ""
                 imageUris.clear()
             } else {
-                val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                val jsonObj =
+                    if (response.errorBody() != null) response.errorBody()!!.byteString()
+                        .utf8() else response.code().toString()
                 Log.d(
                     "server",
                     response.code().toString()
                 )
-                Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
             }
             inputEnabled.value = true
         }
@@ -529,13 +635,14 @@ fun sendFileMessage(
                             )
                         }
                     } else {
-                        val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                        val jsonObj =
+                            if (response.errorBody() != null) response.errorBody()!!.byteString()
+                                .utf8() else response.code().toString()
                         Log.d(
                             "server",
                             response.code().toString()
                         )
-                        Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
 
                     }
                 }

@@ -309,9 +309,10 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
                 }
                 item {
                     ProfileFriendButtons(
-                        state = profile,
-                        profile = profile.value.id
-                    )
+                        state = profile
+                    ){
+                        navController.navigate("chatMessages/$id")
+                    }
                 }
                 if (id.toInt() == User.USER_ID) {
                     item {

@@ -94,8 +94,17 @@ fun MainScreen() {
                     navController.navigate("chatMessages")
                 }
             }
-            composable("chatMessages") {
-                ChatMessagesScreen(friendDTO = friendDTOShare.value)
+            composable("chatMessages/{userID}") { backStackEntry ->
+                ChatMessagesScreen(
+                    backStackEntry.arguments?.getString("userID")!!,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onProfile = {
+                        navController.navigate(
+                            "profile/" + backStackEntry.arguments?.getString("userID")!!
+                        )
+                    })
             }
             composable("friends") {
                 Friends(navController)
@@ -106,7 +115,7 @@ fun MainScreen() {
                 }
             }
             composable("settings") {
-                Settings(){
+                Settings() {
                     navController.popBackStack()
                 }
             }

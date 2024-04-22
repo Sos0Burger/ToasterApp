@@ -2,9 +2,7 @@ package com.messenger.toaster.composable
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
@@ -15,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -35,23 +32,25 @@ import retrofit2.Response
 @Composable
 fun ProfileFriendButtons(
     state: MutableState<UserProfileDTO>,
-    profile: Int
+    onMessages:()->Unit
 ) {
     val context = LocalContext.current
-    Row(Modifier.fillMaxWidth()) {
+    Column(Modifier.fillMaxWidth()) {
         when (state.value.status) {
             FriendStatus.NOTHING -> {
                 Button(
                     onClick = {
                         val userApi = UserApiImpl()
-                        val response = userApi.sendFriendRequest(profile, User.getCredentials())
+                        val response =
+                            userApi.sendFriendRequest(state.value.id, User.getCredentials())
                         response.enqueue(object : Callback<FriendDTO> {
                             override fun onResponse(
                                 call: Call<FriendDTO>,
                                 response: Response<FriendDTO>
                             ) {
                                 if (response.isSuccessful) {
-                                    state.value.status = FriendStatus.SENT
+                                    state.value = state.value.copy(status = FriendStatus.SENT)
+
                                 } else {
                                     val jsonObj = if (response.errorBody() != null) {
                                         response.errorBody()!!.byteString().utf8()
@@ -78,7 +77,7 @@ fun ProfileFriendButtons(
                         })
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "Добавить в друзья", color = Orange)
                 }
@@ -88,14 +87,14 @@ fun ProfileFriendButtons(
                 Button(
                     onClick = {
                         val userApi = UserApiImpl()
-                        val response = userApi.deleteFriend(profile, User.getCredentials())
+                        val response = userApi.deleteFriend(state.value.id, User.getCredentials())
                         response.enqueue(object : Callback<Unit> {
                             override fun onResponse(
                                 call: Call<Unit>,
                                 response: Response<Unit>
                             ) {
                                 if (response.isSuccessful) {
-                                    state.value.status = FriendStatus.NOTHING
+                                    state.value = state.value.copy(status =  FriendStatus.NOTHING)
                                 } else {
                                     val jsonObj = if (response.errorBody() != null) {
                                         response.errorBody()!!.byteString().utf8()
@@ -122,7 +121,7 @@ fun ProfileFriendButtons(
                         })
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "Удалить из друзей", color = Orange, textAlign = TextAlign.Center)
                 }
@@ -132,14 +131,15 @@ fun ProfileFriendButtons(
                 Button(
                     onClick = {
                         val userApi = UserApiImpl()
-                        val response = userApi.acceptFriendRequest(profile, User.getCredentials())
+                        val response =
+                            userApi.acceptFriendRequest(state.value.id, User.getCredentials())
                         response.enqueue(object : Callback<FriendDTO> {
                             override fun onResponse(
                                 call: Call<FriendDTO>,
                                 response: Response<FriendDTO>
                             ) {
                                 if (response.isSuccessful) {
-                                    state.value.status = FriendStatus.NOTHING
+                                    state.value = state.value.copy(status = FriendStatus.FRIEND)
                                 } else {
                                     val jsonObj = if (response.errorBody() != null) {
                                         response.errorBody()!!.byteString().utf8()
@@ -166,7 +166,7 @@ fun ProfileFriendButtons(
                         })
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = "Принять заявку в друзья",
@@ -180,14 +180,16 @@ fun ProfileFriendButtons(
                 Button(
                     onClick = {
                         val userApi = UserApiImpl()
-                        val response = userApi.deleteFriendRequest(profile, User.getCredentials())
+                        val response =
+                            userApi.deleteFriendRequest(state.value.id, User.getCredentials())
                         response.enqueue(object : Callback<Unit> {
                             override fun onResponse(
                                 call: Call<Unit>,
                                 response: Response<Unit>
                             ) {
                                 if (response.isSuccessful) {
-                                    state.value.status = FriendStatus.NOTHING
+                                    state.value = state.value.copy(status = FriendStatus.NOTHING)
+
                                 } else {
                                     val jsonObj = if (response.errorBody() != null) {
                                         response.errorBody()!!.byteString().utf8()
@@ -214,7 +216,7 @@ fun ProfileFriendButtons(
                         })
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = "Отменить заявку в друзья",
@@ -231,9 +233,9 @@ fun ProfileFriendButtons(
         if (state.value.status != FriendStatus.SELF) {
             Spacer(modifier = Modifier.width(8.dp))
             Button(
-                onClick = { /*TODO*/ },
+                onClick = { onMessages() },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "Сообщения", color = Orange, textAlign = TextAlign.Center)
             }
@@ -244,23 +246,20 @@ fun ProfileFriendButtons(
 @Preview(showBackground = true, backgroundColor = 1250067)
 @Composable
 fun ProfileButtonPreview() {
-    Column(
-        Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround
-    ) {
+    Column {
         for (i in FriendStatus.values()) {
-            ProfileFriendButtons(state = remember {
+            ProfileFriendButtons(state =
+            remember {
                 mutableStateOf(
                     UserProfileDTO(
                         1,
                         "Masunya",
                         ArrayList(),
                         null,
-                        FriendStatus.SELF
+                        i
                     )
                 )
-            }, 1)
+            }){}
         }
     }
 

@@ -39,6 +39,7 @@ class FirebaseService : FirebaseMessagingService() {
 
         sendNotification(
             ResponseMessageDTO(
+                id = gson.fromJson(gson.toJson(remoteMessage.data["id"]),Int::class.java),
                 text = gson.fromJson(gson.toJson(remoteMessage.data["text"]), String::class.java),
                 sender = gson.fromJson(remoteMessage.data["sender"].toString(), FriendDTO::class.java),
                 receiver = gson.fromJson(remoteMessage.data["receiver"].toString(), FriendDTO::class.java),
