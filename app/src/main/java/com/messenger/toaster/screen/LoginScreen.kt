@@ -251,7 +251,7 @@ fun LoginScreenButton(
 
                                 Log.d("firebase", token)
                             })
-                        User.USER_ID = (response.body() as? Double?)?.toInt()
+                        User.USER_ID = response.body()!!.toInt()
                         User.EMAIL = email.value
                         User.PASSWORD = password.value
 

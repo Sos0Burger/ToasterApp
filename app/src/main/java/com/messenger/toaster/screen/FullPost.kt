@@ -232,7 +232,7 @@ fun FullPost(id: String, navController: NavController) {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = post.value.comments.toString() + " Комментариев",
+                                text = comments.size.toString() + " Комментариев",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
@@ -275,7 +275,9 @@ fun FullPost(id: String, navController: NavController) {
                         }
                     }
                     items(count = comments.size) { index ->
-                        Comment(comment = comments[index], navController)
+                        Comment(comment = comments[index], navController){
+                            comments.remove(comments[index])
+                        }
                     }
 
                 }

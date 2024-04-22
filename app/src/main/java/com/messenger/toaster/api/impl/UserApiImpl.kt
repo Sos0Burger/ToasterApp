@@ -67,4 +67,29 @@ class UserApiImpl:UserApi {
     override fun sendCode(email: String): Call<Unit> {
         return userApi.sendCode(email)
     }
+
+    override fun deleteFriend(id: Int, h1: String) :Call<Unit>{
+        return userApi.deleteFriend(id, h1)
+    }
+
+    override fun deleteFriendRequest(id: Int, h1: String):Call<Unit> {
+        return userApi.deleteFriendRequest(id, h1)
+    }
+
+    override fun searchUsers(query: String, h1: String): Call<List<FriendDTO>> {
+        return userApi.searchUsers(query, h1)
+    }
+
+    override fun getUserProfile(id: Int, h1: String): Call<UserProfileDTO> {
+        return userApi.getUserProfile(id, h1)
+    }
+
+    override fun getUserPosts(
+        id: Int,
+        query: String,
+        page: Int,
+        h1: String
+    ): Call<List<ResponsePostDTO>> {
+        return userApi.getUserPosts(id, query, page, h1)
+    }
 }

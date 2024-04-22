@@ -1,3 +1,5 @@
 package com.messenger.toaster.dto
 
-class UserProfileDTO(var id:Int, var nickname:String?, var friends:List<FriendDTO>, var image:FileDTO? )
+import com.messenger.toaster.data.FriendStatus
+
+class UserProfileDTO(var id:Int, var nickname:String?, var friends:List<FriendDTO>, var image:FileDTO?, var status:FriendStatus )

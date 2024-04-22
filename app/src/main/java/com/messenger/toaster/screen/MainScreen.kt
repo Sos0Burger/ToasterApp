@@ -98,7 +98,7 @@ fun MainScreen() {
                 ChatMessagesScreen(friendDTO = friendDTOShare.value)
             }
             composable("friends") {
-                Friends()
+                Friends(navController)
             }
             composable("profile/{userId}") { backStackEntry ->
                 Profile(backStackEntry.arguments?.getString("userId")!!, navController) {
@@ -106,7 +106,9 @@ fun MainScreen() {
                 }
             }
             composable("settings") {
-                Settings()
+                Settings(){
+                    navController.popBackStack()
+                }
             }
             composable("postCreation") {
                 CreatePostScreen(navController)

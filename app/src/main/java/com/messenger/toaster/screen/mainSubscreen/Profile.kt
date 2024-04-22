@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -39,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,9 +51,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.messenger.toaster.R
 import com.messenger.toaster.api.RetrofitClient
-import com.messenger.toaster.api.impl.PostApiImpl
 import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.composable.Post
+import com.messenger.toaster.composable.ProfileFriendButtons
+import com.messenger.toaster.data.FriendStatus
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.dto.UserProfileDTO
@@ -65,8 +69,8 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
 
     val context = LocalContext.current
 
-    val profile = remember{
-        mutableStateOf(UserProfileDTO(-1, "Не загружен", ArrayList(), null))
+    val profile = remember {
+        mutableStateOf(UserProfileDTO(-1, "Не загружен", ArrayList(), null, FriendStatus.SELF))
     }
 
     val posts: MutableList<MutableState<ResponsePostDTO>> = remember {
@@ -90,11 +94,13 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
     val isPostLoading = rememberSaveable {
         mutableStateOf(false)
     }
+    val search = remember {
+        mutableStateOf("")
+    }
 
     fun getProfile() {
         val userApi = UserApiImpl()
-        val response = userApi.getUser(User.getCredentials())
-
+        val response = userApi.getUserProfile(id.toInt(), User.getCredentials())
         response.enqueue(object : Callback<UserProfileDTO> {
             override fun onResponse(
                 call: Call<UserProfileDTO>, response: Response<UserProfileDTO>
@@ -102,11 +108,17 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
                 if (response.isSuccessful) {
                     profile.value = response.body()!!
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
                     Log.d(
-                        "server", response.code().toString()
+                        "server",
+                        response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
 
@@ -120,9 +132,9 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
 
     fun getPosts() {
         isPostLoading.value = true
-        val postApi = PostApiImpl()
-        val response = postApi.getPosts(postPage.value, User.getCredentials())
-
+        val userApi = UserApiImpl()
+        val response =
+            userApi.getUserPosts(id.toInt(), search.value, postPage.value, User.getCredentials())
         response.enqueue(object : Callback<List<ResponsePostDTO>> {
             override fun onResponse(
                 call: Call<List<ResponsePostDTO>>,
@@ -166,16 +178,43 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
                 .fillMaxSize(1f)
                 .padding(horizontal = 8.dp)
         ) {
-            IconButton(
-                onClick = { /*TODO*/ },
-                colors = IconButtonDefaults.iconButtonColors(contentColor = Orange)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.back_arrow),
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp)
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = Orange)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back_arrow),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+                Text(
+                    text = "Профиль",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
                 )
+                IconButton(onClick = {
+                    getProfile()
+                    getPosts()
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.update),
+                        contentDescription = null,
+                        tint = Orange
+                    )
+                }
             }
+            Divider(
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 2.dp, end = 16.dp, start = 16.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             LazyColumn(modifier = Modifier.fillMaxSize(1f)) {
                 item {
                     Row(
@@ -267,6 +306,12 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
                             }
                         }
                     }
+                }
+                item {
+                    ProfileFriendButtons(
+                        state = profile,
+                        profile = profile.value.id
+                    )
                 }
                 if (id.toInt() == User.USER_ID) {
                     item {

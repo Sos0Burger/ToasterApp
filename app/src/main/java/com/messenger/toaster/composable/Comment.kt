@@ -10,13 +10,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -27,8 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,23 +56,199 @@ import com.messenger.toaster.api.impl.CommentApiImpl
 import com.messenger.toaster.converter.TimeConverter
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FriendDTO
+import com.messenger.toaster.dto.RequestCommentDTO
 import com.messenger.toaster.dto.ResponseCommentDTO
+import com.messenger.toaster.ui.theme.Night
 import com.messenger.toaster.ui.theme.Orange
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.Date
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Comment(comment: MutableState<ResponseCommentDTO>, navController:NavController) {
+fun Comment(
+    comment: MutableState<ResponseCommentDTO>,
+    navController: NavController,
+    removeComment: () -> Unit
+) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val scrollState = rememberScrollState()
+    val editingComment = remember {
+        mutableStateOf(comment.value.text)
+    }
+    val openEdit = remember { mutableStateOf(false) }
+    val openDelete = remember { mutableStateOf(false) }
     var isTextExpand by remember {
         mutableStateOf(false)
+    }
+    val isDropDown = remember {
+        mutableStateOf(false)
+    }
+    if (openEdit.value) {
+        AlertDialog(
+            onDismissRequest = { openEdit.value = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val commentApi = CommentApiImpl()
+                        val response = commentApi.editComment(
+                            comment.value.id,
+                            User.getCredentials(),
+                            RequestCommentDTO(editingComment.value, Date().time)
+                        )
+                        response.enqueue(object : Callback<ResponseCommentDTO> {
+                            override fun onResponse(
+                                call: Call<ResponseCommentDTO>,
+                                response: Response<ResponseCommentDTO>
+                            ) {
+                                if (response.isSuccessful) {
+                                    comment.value = response.body()!!
+                                    openEdit.value = false
+                                } else {
+                                    val jsonObj = if (response.errorBody() != null) {
+                                        response.errorBody()!!.byteString().utf8()
+                                    } else {
+                                        response.code().toString()
+                                    }
+                                    Log.d(
+                                        "server",
+                                        response.code().toString()
+                                    )
+                                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                                        .show()
+                                }
+                            }
+
+                            override fun onFailure(call: Call<ResponseCommentDTO>, t: Throwable) {
+                                Log.d("server", t.message.toString())
+                                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        })
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        contentColor = Orange,
+                        disabledContentColor = Color.Gray
+                    ),
+                    enabled = editingComment.value.isNotEmpty()
+                ) {
+                    Text(text = "Подтвердить")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { openEdit.value = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        contentColor = Color.White,
+                        disabledContentColor = Color.Gray
+                    )
+                ) {
+                    Text(text = "Отменить")
+                }
+            },
+            title = { Text(text = "Редактировать комментарий", color = Color.White) },
+            text = {
+                TextField(
+                    value = editingComment.value,
+                    onValueChange = { editingComment.value = it },
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color.DarkGray,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        textColor = Color.White,
+                        cursorColor = Orange
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .heightIn(min = 48.dp, max = 96.dp)
+                )
+            },
+            containerColor = Night
+        )
+    }
+    if (openDelete.value) {
+        AlertDialog(
+            onDismissRequest = { openDelete.value = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val commentApi = CommentApiImpl()
+                        val response = commentApi.deleteComment(
+                            comment.value.id,
+                            User.getCredentials()
+                        )
+                        response.enqueue(object : Callback<Unit> {
+                            override fun onResponse(
+                                call: Call<Unit>,
+                                response: Response<Unit>
+                            ) {
+                                if (response.isSuccessful) {
+                                    removeComment()
+                                    openDelete.value = false
+                                } else {
+                                    val jsonObj = if (response.errorBody() != null) {
+                                        response.errorBody()!!.byteString().utf8()
+                                    } else {
+                                        response.code().toString()
+                                    }
+                                    Log.d(
+                                        "server",
+                                        response.code().toString()
+                                    )
+                                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                                        .show()
+                                }
+                            }
+
+                            override fun onFailure(call: Call<Unit>, t: Throwable) {
+                                Log.d("server", t.message.toString())
+                                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        })
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        contentColor = Orange,
+                        disabledContentColor = Color.Gray
+                    )
+                ) {
+                    Text(text = "Да")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { openDelete.value = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        contentColor = Color.White,
+                        disabledContentColor = Color.Gray
+                    )
+                ) {
+                    Text(text = "Нет")
+                }
+            },
+            title = { Text(text = "Вы точно хотите удалить комментарий?", color = Color.White) },
+            containerColor = Night
+        )
     }
     Column(
         Modifier
             .fillMaxWidth(1f)
             .padding(horizontal = 8.dp)
+            .clickable(onClick = {
+                isDropDown.value = !isDropDown.value
+            })
     ) {
         Row(
             Modifier
@@ -90,15 +279,48 @@ fun Comment(comment: MutableState<ResponseCommentDTO>, navController:NavControll
             )
 
             Column {
+                DropdownMenu(
+                    expanded = isDropDown.value,
+                    onDismissRequest = { isDropDown.value = false },
+                    modifier = Modifier.background(color = Color.DarkGray)
+                ) {
+                    DropdownMenuItem(text = {
+                        Text(
+                            text = "Скопировать текст",
+                            color = Color.White
+                        )
+                    }, onClick = {
+                        clipboardManager.setText(AnnotatedString(comment.value.text))
+                        isDropDown.value = false
+                    })
+                    if (comment.value.creator.id == User.USER_ID) {
+                        DropdownMenuItem(
+                            text = { Text("Редактировать", color = Color.White) },
+                            onClick = {
+                                openEdit.value = true
+                                isDropDown.value = false
+                            })
+                        DropdownMenuItem(text = { Text("Удалить", color = Color.White) },
+                            onClick = {
+                                openDelete.value = true
+                                isDropDown.value = false
+                            })
+                    }
+                }
                 Text(text = comment.value.creator.nickname.toString(), color = Color.White)
                 Text(
                     text = comment.value.text,
                     color = Color.White,
-                    modifier = Modifier
-                        .padding(end = 16.dp)
-                        .clickable(onClick = {
-                            isTextExpand = !isTextExpand
-                        }),
+                    modifier = if (!isTextExpand) {
+                        Modifier
+                            .padding(end = 16.dp)
+                            .clickable(onClick = {
+                                isTextExpand = !isTextExpand
+                            })
+                    } else {
+                        Modifier
+                            .padding(end = 16.dp)
+                    },
                     maxLines = when (isTextExpand) {
                         false -> 8
                         else -> Int.MAX_VALUE
@@ -145,7 +367,8 @@ fun Comment(comment: MutableState<ResponseCommentDTO>, navController:NavControll
 
                         override fun onFailure(call: Call<ResponseCommentDTO>, t: Throwable) {
                             Log.d("server", t.message.toString())
-                            Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     })
                 }, modifier = Modifier
@@ -192,5 +415,7 @@ fun CommentPreview() {
             )
         },
         rememberNavController()
-    )
+    ) {
+
+    }
 }

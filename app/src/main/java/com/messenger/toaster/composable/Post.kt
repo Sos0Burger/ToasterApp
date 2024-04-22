@@ -71,6 +71,9 @@ fun Post(
     isLatestComment: Boolean,
     navController: NavController
 ) {
+    var isLatestCommentState = remember{
+        mutableStateOf(isLatestComment)
+    }
     var isTextExpand by remember {
         mutableStateOf(false)
     }
@@ -277,7 +280,7 @@ fun Post(
             }
 
         }
-        if (isLatestComment) {
+        if (isLatestCommentState.value) {
             Divider(
                 color = Color.Gray,
                 modifier = Modifier.padding(top = 2.dp, end = 16.dp, start = 16.dp)
@@ -286,7 +289,11 @@ fun Post(
             if (post.value.popularComment != null) {
                 Comment(comment = remember {
                     mutableStateOf(post.value.popularComment!!)
-                }, navController = navController)
+                }, navController = navController){
+                    post.value.popularComment = null
+                    post.value.comments -= 1
+                    isLatestCommentState.value = false
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
         }

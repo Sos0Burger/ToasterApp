@@ -8,14 +8,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,11 +36,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.messenger.toaster.R
 import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.api.impl.FileApiImpl
 import com.messenger.toaster.api.impl.UserApiImpl
@@ -43,6 +51,7 @@ import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.UserSettingsDTO
 import com.messenger.toaster.requestbody.InputStreamRequestBody
+import com.messenger.toaster.ui.theme.Orange
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import org.json.JSONObject
@@ -52,7 +61,7 @@ import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Settings() {
+fun Settings(back:()->Unit) {
     val imageUri: MutableState<Uri> = remember {
         mutableStateOf(Uri.EMPTY)
     }
@@ -155,12 +164,17 @@ fun Settings() {
                     userSettings.value.nickName = nickname.value
                     nickname.value = ""
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj = if (response.errorBody() != null) {
+                            response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
                         "server",
                         response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
                         .show()
 
                 }
@@ -174,10 +188,10 @@ fun Settings() {
         })
     }
 
-    fun getSettings(){
+    fun getSettings() {
         val userApi = UserApiImpl()
         val response = userApi.getSettings(User.getCredentials())
-        response.enqueue(object :Callback<UserSettingsDTO>{
+        response.enqueue(object : Callback<UserSettingsDTO> {
             override fun onResponse(
                 call: Call<UserSettingsDTO>,
                 response: Response<UserSettingsDTO>
@@ -206,6 +220,38 @@ fun Settings() {
 
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+        Column (Modifier.fillMaxWidth(), verticalArrangement = Arrangement.Top){
+            Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    onClick = { back() },
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = Orange)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.back_arrow),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+                Text(
+                    text = "Профиль",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = {
+                    getSettings()
+                }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.update),
+                        contentDescription = null,
+                        tint = Orange
+                    )
+                }
+            }
+        }
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -221,9 +267,11 @@ fun Settings() {
                             "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
                         else
                             ImageRequest.Builder(LocalContext.current)
-                                .data(RetrofitClient.getInstance().baseUrl().toString() +
-                                        "file/" +
-                                        userSettings.value.image!!.id)
+                                .data(
+                                    RetrofitClient.getInstance().baseUrl().toString() +
+                                            "file/" +
+                                            userSettings.value.image!!.id
+                                )
                                 .crossfade(true)
                                 .build()
                     else
@@ -298,6 +346,6 @@ fun Settings() {
 @Preview(showBackground = true)
 @Composable
 fun SettingsPreview() {
-    Settings()
+    Settings(){}
 }
 
