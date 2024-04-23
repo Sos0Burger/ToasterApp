@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -241,7 +243,8 @@ fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
                     shape = RectangleShape,
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent),
                     contentPadding = PaddingValues(1.dp),
-                    border = BorderStroke(0.dp, Color.Transparent)
+                    border = BorderStroke(0.dp, Color.Transparent),
+                    modifier = Modifier.weight(1f)
                 ) {
                     AsyncImage(
                         model = if (profile.value.image == null)
@@ -262,6 +265,7 @@ fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
                             .clip(CircleShape)
                             .background(color = Color.DarkGray)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
                             text = profile.value.nickname ?: "Альтернативное имя не указано",

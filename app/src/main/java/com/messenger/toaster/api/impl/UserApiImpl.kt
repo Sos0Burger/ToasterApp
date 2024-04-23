@@ -3,6 +3,7 @@ package com.messenger.toaster.api.impl
 import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.api.UserApi
 import com.messenger.toaster.dto.FriendDTO
+import com.messenger.toaster.dto.ResponseChatDTO
 import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.dto.UserDTO
 import com.messenger.toaster.dto.UserProfileDTO
@@ -91,5 +92,9 @@ class UserApiImpl:UserApi {
         h1: String
     ): Call<List<ResponsePostDTO>> {
         return userApi.getUserPosts(id, query, page, h1)
+    }
+
+    override fun getUserChats(h1: String): Call<List<ResponseChatDTO>> {
+        return userApi.getUserChats(h1)
     }
 }

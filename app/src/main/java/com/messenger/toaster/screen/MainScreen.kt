@@ -68,11 +68,6 @@ fun MainScreen() {
             }
         }
     }
-
-
-    val friendDTOShare = remember {
-        mutableStateOf(FriendDTO(-1, null, null))
-    }
     val currentScreen = remember {
         mutableStateOf("news")
     }
@@ -90,9 +85,7 @@ fun MainScreen() {
                 News(navController = navController)
             }
             composable("chat") {
-                Chat(friendDTOShare) {
-                    navController.navigate("chatMessages")
-                }
+                Chat(navController)
             }
             composable("chatMessages/{userID}") { backStackEntry ->
                 ChatMessagesScreen(

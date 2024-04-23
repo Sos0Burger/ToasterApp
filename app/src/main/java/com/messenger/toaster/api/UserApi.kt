@@ -1,6 +1,7 @@
 package com.messenger.toaster.api
 
 import com.messenger.toaster.dto.FriendDTO
+import com.messenger.toaster.dto.ResponseChatDTO
 import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.dto.UserDTO
 import com.messenger.toaster.dto.UserProfileDTO
@@ -96,4 +97,7 @@ interface UserApi {
         @Query("page") page: Int,
         @Header("Authorization") h1: String
     ): Call<List<ResponsePostDTO>>
+
+    @GET("user/chats")
+    fun getUserChats(@Header("Authorization") h1: String): Call<List<ResponseChatDTO>>
 }

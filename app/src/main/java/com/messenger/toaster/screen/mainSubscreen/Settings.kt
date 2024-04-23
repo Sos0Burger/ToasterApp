@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -244,7 +245,7 @@ fun Settings(back:()->Unit) {
                     )
                 }
                 Text(
-                    text = "Профиль",
+                    text = "Настройки",
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -259,6 +260,10 @@ fun Settings(back:()->Unit) {
                     )
                 }
             }
+            Divider(
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 2.dp, end = 16.dp, start = 16.dp)
+            )
         }
 
         Column(
