@@ -1,6 +1,7 @@
 package com.messenger.toaster.screen
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -395,12 +396,17 @@ fun RegistrationButton(
                         }
                         onNavigateToLogin()
                     } else {
-                        val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                        val jsonObj = if (response.errorBody() != null) {
+                            response.errorBody()!!.byteString().utf8()
+                        } else {
+                            response.code().toString()
+                        }
+
                         Log.d(
                             "server",
-                            response.code().toString() + " " + jsonObj.getString("message")
+                            response.code().toString()
                         )
-                        errorMessage.value = jsonObj.getString("message")
+                        errorMessage.value = jsonObj
                         snackBarState.value = true
                         clicked.value = false
                         enabled.value = true

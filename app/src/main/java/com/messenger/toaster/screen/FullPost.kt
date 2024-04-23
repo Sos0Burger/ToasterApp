@@ -118,11 +118,18 @@ fun FullPost(id: String, navController: NavController) {
                 if (response.isSuccessful) {
                     post.value = response.body()!!
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
-                        "server", response.code().toString()
+                        "server",
+                        response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                        .show()
                 }
                 isPostLoading.value = false
             }
@@ -152,11 +159,18 @@ fun FullPost(id: String, navController: NavController) {
                     comments.clear()
                     response.body()!!.forEach { comments.add(mutableStateOf(it)) }
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
-                        "server", response.code().toString()
+                        "server",
+                        response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                        .show()
                 }
                 isCommentsLoading.value = false
             }
@@ -307,17 +321,18 @@ fun FullPost(id: String, navController: NavController) {
                                             comments.add(0, mutableStateOf(response.body()!!))
                                             comment.value = ""
                                         } else {
-                                            val jsonObj = JSONObject(
-                                                response.errorBody()!!.charStream().readText()
-                                            )
+                                            val jsonObj = if (response.errorBody() != null) {
+                                                response.errorBody()!!.byteString().utf8()
+                                            } else {
+                                                response.code().toString()
+                                            }
+
                                             Log.d(
-                                                "server", response.code().toString()
+                                                "server",
+                                                response.code().toString()
                                             )
-                                            Toast.makeText(
-                                                context,
-                                                jsonObj.getString("message"),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                                                .show()
                                         }
                                     }
 

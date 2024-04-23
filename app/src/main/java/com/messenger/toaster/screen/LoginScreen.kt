@@ -1,6 +1,7 @@
 package com.messenger.toaster.screen
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -170,12 +171,17 @@ fun LoginScreen(
                             inputEnabled.value = true
                         }
                         else {
-                            val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                            val jsonObj = if (response.errorBody() != null) {
+                                response.errorBody()!!.byteString().utf8()
+                            } else {
+                                response.code().toString()
+                            }
+
                             Log.d(
                                 "server",
-                                response.code().toString() + " " + jsonObj.getString("message")
+                                response.code().toString()
                             )
-                            errorMessage.value = jsonObj.getString("message")
+                            errorMessage.value = jsonObj
                             snackBarState.value = true
                             inputEnabled.value = true
                         }
@@ -268,12 +274,17 @@ fun LoginScreenButton(
                             inputEnabled.value = true
                         }
                         else {
-                            val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                            val jsonObj = if (response.errorBody() != null) {
+                                response.errorBody()!!.byteString().utf8()
+                            } else {
+                                response.code().toString()
+                            }
+
                             Log.d(
                                 "server",
-                                response.code().toString() + " " + jsonObj.getString("message")
+                                response.code().toString()
                             )
-                            errorMessage.value = jsonObj.getString("message")
+                            errorMessage.value = jsonObj
                             snackBarState.value = true
                             inputEnabled.value = true
                         }

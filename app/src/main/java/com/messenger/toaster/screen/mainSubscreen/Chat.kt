@@ -3,6 +3,7 @@
 package com.messenger.toaster.screen.mainSubscreen
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -90,12 +91,17 @@ fun Chat(friendDTOShare: MutableState<FriendDTO>, onChatMessages: () -> Unit) {
                     friendList.addAll(response.body()!!.toMutableList())
                     if(friendList.isEmpty())isFriendListEmpty.value = true
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
                         "server",
-                        response.code().toString() + " " + jsonObj.getString("message")
+                        response.code().toString()
                     )
-                    errorMessage.value = jsonObj.getString("message")
+                    errorMessage.value = jsonObj
                     snackBarState.value = true
                 }
             }

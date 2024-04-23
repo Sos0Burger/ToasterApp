@@ -79,11 +79,18 @@ fun News(navController: NavController) {
                     response.body()!!.forEach { posts.add(mutableStateOf(it)) }
                     postPage.value++
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
-                        "server", response.code().toString()
+                        "server",
+                        response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                        .show()
                 }
                 isPostLoading.value = false
             }

@@ -54,7 +54,6 @@ import com.messenger.toaster.requestbody.InputStreamRequestBody
 import com.messenger.toaster.ui.theme.Orange
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -111,17 +110,17 @@ fun Settings(back:()->Unit) {
                                 userSettings.value.image!!.id = fileResponse.body()!!.id
                                 imageUri.value = Uri.EMPTY
                             } else {
-                                val jsonObj =
-                                    JSONObject(userResponse.errorBody()!!.charStream().readText())
+                                val jsonObj = if (userResponse.errorBody() != null) {
+                                    userResponse.errorBody()!!.byteString().utf8()
+                                } else {
+                                    userResponse.code().toString()
+                                }
+
                                 Log.d(
                                     "server",
                                     userResponse.code().toString()
                                 )
-                                Toast.makeText(
-                                    context,
-                                    jsonObj.getString("message"),
-                                    Toast.LENGTH_SHORT
-                                )
+                                Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
                                     .show()
                             }
                         }
@@ -132,12 +131,17 @@ fun Settings(back:()->Unit) {
                         }
                     })
                 } else {
-                    val jsonObj = JSONObject(fileResponse.errorBody()!!.charStream().readText())
+                    val jsonObj = if (fileResponse.errorBody() != null) {
+                        fileResponse.errorBody()!!.byteString().utf8()
+                    } else {
+                        fileResponse.code().toString()
+                    }
+
                     Log.d(
                         "server",
                         fileResponse.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
                         .show()
 
                 }
@@ -199,12 +203,17 @@ fun Settings(back:()->Unit) {
                 if (response.code() == 200) {
                     userSettings.value = response.body()!!
                 } else {
-                    val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
                         "server",
                         response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
                         .show()
 
                 }

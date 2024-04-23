@@ -271,12 +271,17 @@ fun sendFilePost(
                             sendPost(context, text, uploadedImageIds, inputEnabled, navController)
                         }
                     } else {
-                        val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                        val jsonObj = if (response.errorBody() != null) {
+                            response.errorBody()!!.byteString().utf8()
+                        } else {
+                            response.code().toString()
+                        }
+
                         Log.d(
                             "server",
                             response.code().toString()
                         )
-                        Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
+                        Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
                             .show()
                         inputEnabled.value = true
                     }
@@ -316,12 +321,17 @@ private fun sendPost(
             if (response.isSuccessful) {
                 navController.navigate("profile/"+ User.USER_ID!!)
             } else {
-                val jsonObj = JSONObject(response.errorBody()!!.charStream().readText())
+                val jsonObj = if (response.errorBody() != null) {
+                    response.errorBody()!!.byteString().utf8()
+                } else {
+                    response.code().toString()
+                }
+
                 Log.d(
                     "server",
                     response.code().toString()
                 )
-                Toast.makeText(context, jsonObj.getString("message"), Toast.LENGTH_SHORT)
+                Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
                     .show()
                 inputEnabled.value = true
             }
