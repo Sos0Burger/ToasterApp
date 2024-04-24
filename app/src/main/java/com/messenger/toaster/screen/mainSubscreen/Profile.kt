@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
@@ -59,13 +61,19 @@ import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.dto.UserProfileDTO
 import com.messenger.toaster.ui.theme.Orange
+import com.messenger.toaster.viewmodel.ProfilePostViewModel
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) {
+fun Profile(
+    id: String,
+    navController: NavController,
+    profilePostViewModel: ProfilePostViewModel = viewModel(),
+    onCreatePost: () -> Unit
+) {
 
     val context = LocalContext.current
 
@@ -73,9 +81,7 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
         mutableStateOf(UserProfileDTO(-1, "Не загружен", ArrayList(), null, FriendStatus.SELF))
     }
 
-    val posts: MutableList<MutableState<ResponsePostDTO>> = remember {
-        mutableStateListOf()
-    }
+    val posts by profilePostViewModel.posts.collectAsState()
 
     val postCount = remember {
         derivedStateOf { posts.size }
@@ -130,45 +136,6 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
 
     }
 
-    fun getPosts() {
-        isPostLoading.value = true
-        val userApi = UserApiImpl()
-        val response =
-            userApi.getUserPosts(id.toInt(), search.value, postPage.value, User.getCredentials())
-        response.enqueue(object : Callback<List<ResponsePostDTO>> {
-            override fun onResponse(
-                call: Call<List<ResponsePostDTO>>,
-                response: Response<List<ResponsePostDTO>>
-            ) {
-                if (response.isSuccessful) {
-                    response.body()!!.forEach { posts.add(mutableStateOf(it)) }
-                    postPage.value++
-                } else {
-                    val jsonObj = if (response.errorBody() != null) {
-                        response.errorBody()!!.byteString().utf8()
-                    } else {
-                        response.code().toString()
-                    }
-
-                    Log.d(
-                        "server",
-                        response.code().toString()
-                    )
-                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
-                        .show()
-                }
-                isPostLoading.value = false
-            }
-
-            override fun onFailure(call: Call<List<ResponsePostDTO>>, t: Throwable) {
-                Log.d("server", t.message.toString())
-                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-                isPostLoading.value = false
-            }
-
-        })
-    }
-
     if (profile.value.id == -1) {
         getProfile()
     }
@@ -208,7 +175,8 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
                 )
                 IconButton(onClick = {
                     getProfile()
-                    getPosts()
+                    profilePostViewModel.refresh(id.toInt(), "", context)
+                    //getPosts()
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.update),
@@ -317,7 +285,7 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
                 item {
                     ProfileFriendButtons(
                         state = profile
-                    ){
+                    ) {
                         navController.navigate("chatMessages/$id")
                     }
                 }
@@ -337,7 +305,7 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
                 }
 
                 items(count = postCount.value) { index ->
-                    Post(post = posts[index], true, navController = navController)
+                    Post(post = remember{mutableStateOf(posts[index])}, true, navController = navController)
                 }
 
                 item {
@@ -357,7 +325,7 @@ fun Profile(id: String, navController: NavController, onCreatePost: () -> Unit) 
         }
     }
     if (endReached && !isPostLoading.value && profile.value.id != -1) {
-        getPosts()
+        profilePostViewModel.loadNextPage(id.toInt(), "", context)
     }
 
 }

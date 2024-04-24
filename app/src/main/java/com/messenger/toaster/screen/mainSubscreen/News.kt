@@ -2,6 +2,7 @@ package com.messenger.toaster.screen.mainSubscreen
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -30,6 +35,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.composable.Post
+import com.messenger.toaster.data.NewsTab
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.ui.theme.Orange
@@ -39,6 +45,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalStdlibApi::class)
 @Composable
 fun News(navController: NavController) {
 
@@ -53,6 +60,9 @@ fun News(navController: NavController) {
 
     val postPage = remember {
         mutableStateOf(0)
+    }
+    val pagerState = rememberPagerState(0) {
+        2
     }
 
     val postScrollState = rememberLazyListState()
@@ -109,6 +119,13 @@ fun News(navController: NavController) {
             .fillMaxSize()
             .padding(bottom = 58.dp), color = Color.Black
     ) {
+        TabRow(selectedTabIndex = pagerState.currentPage,
+            ) {
+            NewsTab.entries.forEachIndexed { index, newsTab ->
+                Tab(selected = pagerState.currentPage == index, onClick = { /*TODO*/ }) {
+
+            }  }
+        }
         LazyColumn(modifier = Modifier
             .fillMaxSize(1f)
             .padding(horizontal = 8.dp),
