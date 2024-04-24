@@ -3,6 +3,7 @@ package com.messenger.toaster.api.impl
 import com.messenger.toaster.api.PostApi
 import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.data.SortingEnum
+import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.RequestCommentDTO
 import com.messenger.toaster.dto.RequestPostDTO
 import com.messenger.toaster.dto.ResponseCommentDTO
@@ -34,5 +35,9 @@ class PostApiImpl: PostApi {
 
     override fun smashLike(id: Int, h1: String): Call<ResponsePostDTO> {
         return postApi.smashLike(id, h1)
+    }
+
+    override fun getPostImages(id: Int, h1: String): Call<List<FileDTO>> {
+        return postApi.getPostImages(id, h1)
     }
 }

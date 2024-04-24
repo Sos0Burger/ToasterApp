@@ -36,7 +36,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.messenger.toaster.R
 import com.messenger.toaster.data.User
-import com.messenger.toaster.dto.FriendDTO
 import com.messenger.toaster.screen.mainSubscreen.Chat
 import com.messenger.toaster.screen.mainSubscreen.CreatePostScreen
 import com.messenger.toaster.screen.mainSubscreen.Friends
@@ -120,6 +119,14 @@ fun MainScreen() {
                     id = backStackEntry.arguments?.getString("postID")!!,
                     navController = navController
                 )
+            }
+            composable("post/{postID}/images/{initial}") { backStackEntry ->
+                FullScreenImages(
+                    post = backStackEntry.arguments?.getString("postID")!!,
+                    initial = backStackEntry.arguments?.getString("initial")!!
+                ) {
+                    navController.popBackStack()
+                }
             }
         }
         Row(

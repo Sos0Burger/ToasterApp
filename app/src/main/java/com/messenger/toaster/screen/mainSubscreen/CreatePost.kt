@@ -58,6 +58,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.messenger.toaster.R
 import com.messenger.toaster.api.impl.FileApiImpl
 import com.messenger.toaster.api.impl.PostApiImpl
+import com.messenger.toaster.converter.getFileName
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.RequestPostDTO
@@ -66,7 +67,6 @@ import com.messenger.toaster.requestbody.InputStreamRequestBody
 import com.messenger.toaster.ui.theme.Orange
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -251,7 +251,7 @@ fun sendFilePost(
             multipartFiles.add(
                 MultipartBody.Part.createFormData(
                     "attachment",
-                    item.path,
+                    getFileName(cR, item),
                     InputStreamRequestBody(
                         cR.getType(item)!!.toMediaType(),
                         context.contentResolver,

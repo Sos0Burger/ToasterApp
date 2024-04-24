@@ -59,7 +59,6 @@ import com.messenger.toaster.dto.ResponseCommentDTO
 import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.ui.theme.Night
 import com.messenger.toaster.ui.theme.Orange
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -71,13 +70,15 @@ fun Post(
     isLatestComment: Boolean,
     navController: NavController
 ) {
-    var isLatestCommentState = remember{
+    var isLatestCommentState = remember {
         mutableStateOf(isLatestComment)
     }
     var isTextExpand by remember {
         mutableStateOf(false)
     }
     val context = LocalContext.current
+
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -106,7 +107,7 @@ fun Post(
                     .clip(CircleShape)
                     .background(color = Color.DarkGray)
                     .clickable {
-                        navController.navigate("profile/"+post.value.creator.id)
+                        navController.navigate("profile/" + post.value.creator.id)
                     }
             )
             Column {
@@ -158,7 +159,7 @@ fun Post(
             )
         }
         if (post.value.attachments.isNotEmpty()) {
-            val pagerState = rememberPagerState(){post.value.attachments.size}
+            val pagerState = rememberPagerState() { post.value.attachments.size }
             Box(modifier = Modifier.padding(bottom = 8.dp)) {
                 HorizontalPager(
                     modifier = Modifier
@@ -181,6 +182,9 @@ fun Post(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(5))
                                 .height(512.dp)
+                                .clickable {
+                                    navController.navigate("post/"+post.value.id+"/images/"+page)
+                                }
                         )
                     }
                 }
@@ -265,11 +269,15 @@ fun Post(
                 Surface(shape = CircleShape,
                     color = Color.Transparent,
                     onClick = {
-                    navController.navigate("post/" + post.value.id.toString())
-                }) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween,
+                        navController.navigate("post/" + post.value.id.toString())
+                    }) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f).padding(2.dp)) {
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(2.dp)
+                    ) {
                         Icon(
                             painter = painterResource(id = R.drawable.comment),
                             contentDescription = null,
@@ -291,7 +299,7 @@ fun Post(
             if (post.value.popularComment != null) {
                 Comment(comment = remember {
                     mutableStateOf(post.value.popularComment!!)
-                }, navController = navController){
+                }, navController = navController) {
                     post.value.popularComment = null
                     post.value.comments -= 1
                     isLatestCommentState.value = false

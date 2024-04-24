@@ -4,6 +4,7 @@ import com.messenger.toaster.api.FileApi
 import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.dto.FileDTO
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.Call
 
 private val fileApi = RetrofitClient.getInstance().create(FileApi::class.java)
@@ -14,5 +15,9 @@ class FileApiImpl:FileApi {
         attachment: MultipartBody.Part
     ): Call<FileDTO> {
         return fileApi.upload(h1, attachment)
+    }
+
+    override fun download(id: Int): Call<ResponseBody> {
+        return fileApi.download(id)
     }
 }

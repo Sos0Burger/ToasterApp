@@ -39,19 +39,31 @@ class FirebaseService : FirebaseMessagingService() {
 
         sendNotification(
             ResponseMessageDTO(
-                id = gson.fromJson(gson.toJson(remoteMessage.data["id"]),Int::class.java),
+                id = gson.fromJson(gson.toJson(remoteMessage.data["id"]), Int::class.java),
                 text = gson.fromJson(gson.toJson(remoteMessage.data["text"]), String::class.java),
-                sender = gson.fromJson(remoteMessage.data["sender"].toString(), FriendDTO::class.java),
-                receiver = gson.fromJson(remoteMessage.data["receiver"].toString(), FriendDTO::class.java),
+                sender = gson.fromJson(
+                    remoteMessage.data["sender"].toString(),
+                    FriendDTO::class.java
+                ),
+                receiver = gson.fromJson(
+                    remoteMessage.data["receiver"].toString(),
+                    FriendDTO::class.java
+                ),
                 date = gson.fromJson(remoteMessage.data["date"].toString(), Long::class.java),
-                attachments = gson.fromJson(remoteMessage.data["attachments"].toString(), Array<FileDTO>::class.java).toList()
+                attachments = gson.fromJson(
+                    remoteMessage.data["attachments"].toString(),
+                    Array<FileDTO>::class.java
+                ).toList(),
+                read = gson.fromJson(
+                    remoteMessage.data["attachments"].toString(), Boolean::class.java
+                )
             )
         )
     }
 
     override fun onNewToken(token: String) {
         Log.d(TAG, "Refreshed token: $token")
-        if(User.EMAIL!=null) {
+        if (User.EMAIL != null) {
             sendRegistrationToServer(token)
         }
     }
@@ -59,7 +71,7 @@ class FirebaseService : FirebaseMessagingService() {
     private fun sendRegistrationToServer(token: String?) {
         val userApi = UserApiImpl()
         val response = userApi.updateToken(token.toString(), User.getCredentials())
-        response.enqueue(object :Callback<Unit>{
+        response.enqueue(object : Callback<Unit> {
             override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
                 if (response.code() == 200) {
                     Log.d("server", "Токен обновлен")
@@ -96,7 +108,7 @@ class FirebaseService : FirebaseMessagingService() {
             .setContentTitle(
                 (
                         "Сообщение от " +
-                        (message.sender.nickname ?: message.sender.id.toString())
+                                (message.sender.nickname ?: message.sender.id.toString())
                         )
             )
             .setContentText(message.text)

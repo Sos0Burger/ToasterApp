@@ -48,6 +48,7 @@ import com.messenger.toaster.R
 import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.api.impl.FileApiImpl
 import com.messenger.toaster.api.impl.UserApiImpl
+import com.messenger.toaster.converter.getFileName
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.UserSettingsDTO
@@ -89,7 +90,7 @@ fun Settings(back:()->Unit) {
             User.getCredentials(),
             MultipartBody.Part.createFormData(
                 "attachment",
-                imageUri.value.path,
+                getFileName(cR, imageUri.value),
                 InputStreamRequestBody(
                     cR.getType(imageUri.value)!!.toMediaType(),
                     context.contentResolver,

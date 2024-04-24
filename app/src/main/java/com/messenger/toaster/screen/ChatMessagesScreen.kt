@@ -56,6 +56,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,6 +79,7 @@ import com.messenger.toaster.api.impl.FileApiImpl
 import com.messenger.toaster.api.impl.MessageApiImpl
 import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.converter.TimeConverter
+import com.messenger.toaster.converter.getFileName
 import com.messenger.toaster.data.FriendStatus
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
@@ -88,6 +90,7 @@ import com.messenger.toaster.dto.UserProfileDTO
 import com.messenger.toaster.requestbody.InputStreamRequestBody
 import com.messenger.toaster.ui.theme.Graphite
 import com.messenger.toaster.ui.theme.Orange
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import retrofit2.Call
@@ -98,7 +101,8 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
+fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
+    val coroutineScope = rememberCoroutineScope()
     val messages: MutableList<ResponseMessageDTO> = remember {
         mutableStateListOf()
     }
@@ -305,7 +309,7 @@ fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
                     key = { index -> messages.getOrNull(index)?.id ?: index },
                     count = messages.size
                 ) { index ->
-                    if(messages.getOrNull(index)!=null) {
+                    if (messages.getOrNull(index) != null) {
 
                         Row(
                             horizontalArrangement = if (messages[index].sender.id != profile.value.id) Arrangement.End else Arrangement.Start,
@@ -339,12 +343,13 @@ fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
                                     val pagerState = rememberPagerState(
                                         initialPageOffsetFraction = 0.5F, // Необязательно, для предзагрузки страниц
                                         initialPage = 0 // Индекс начальной страницы
-                                    ){try {
-                                        messages[index].attachments.size
-                                    }catch (ex:IndexOutOfBoundsException){
-                                        0
-                                    }
+                                    ) {
+                                        try {
+                                            messages[index].attachments.size
+                                        } catch (ex: IndexOutOfBoundsException) {
+                                            0
                                         }
+                                    }
 
                                     Box() {
                                         HorizontalPager(
@@ -394,22 +399,30 @@ fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
 
                                     }
                                 }
-                                Text(
-                                    text = TimeConverter.longToLocalTime(messages[index].date),
-                                    textAlign = TextAlign.End,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(all = 4.dp),
-                                    color = Color.White
-                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceAround,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = TimeConverter.longToLocalTime(messages[index].date),
+                                        textAlign = TextAlign.End,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.padding(all = 4.dp),
+                                        color = Color.White
+                                    )
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.check_icon),
+                                        contentDescription = null,
+                                        tint = if (messages[index].read) Orange else Color.Black
+                                    )
+                                }
+
                             }
                         }
                     }
                 }
 
             }
-
-
-
             LazyRow(
                 contentPadding = PaddingValues(4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -493,7 +506,12 @@ fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
                                 ArrayList(),
                                 imageUris,
                                 inputEnabled
-                            )
+                            ) {
+                                coroutineScope.launch {
+                                    messageScrollState.animateScrollToItem(0)
+                                }
+                            }
+
                         } else {
                             sendFileMessage(
                                 context = context,
@@ -506,7 +524,12 @@ fun ChatMessagesScreen(id: String, onBack:()->Unit, onProfile:()->Unit) {
                                     profile.value.nickname,
                                     profile.value.image
                                 )
-                            )
+                            ) {
+                                coroutineScope.launch {
+                                    messageScrollState.animateScrollToItem(0)
+                                }
+                            }
+
                         }
 
                     },
@@ -553,7 +576,8 @@ fun sendMessage(
     messages: MutableList<ResponseMessageDTO>,
     uploadedImageIds: MutableList<Int>,
     imageUris: MutableList<Uri>,
-    inputEnabled: MutableState<Boolean>
+    inputEnabled: MutableState<Boolean>,
+    onEnd: () -> Unit
 ) {
     val messageApi = MessageApiImpl()
     val requestMessage = RequestMessageDTO(
@@ -572,6 +596,7 @@ fun sendMessage(
                 messages.add(0, response.body()!!)
                 message.value = ""
                 imageUris.clear()
+                onEnd()
             } else {
                 val jsonObj =
                     if (response.errorBody() != null) response.errorBody()!!.byteString()
@@ -600,7 +625,8 @@ fun sendFileMessage(
     message: MutableState<String>,
     friendDTO: FriendDTO,
     messages: MutableList<ResponseMessageDTO>,
-    inputEnabled: MutableState<Boolean>
+    inputEnabled: MutableState<Boolean>,
+    onEnd: () -> Unit
 ) {
     val files = imageUris.toList()
     if (files.isNotEmpty()) {
@@ -611,7 +637,7 @@ fun sendFileMessage(
             multipartFiles.add(
                 MultipartBody.Part.createFormData(
                     "attachment",
-                    item.path,
+                    getFileName(cR, item),
                     InputStreamRequestBody(
                         cR.getType(item)!!.toMediaType(),
                         context.contentResolver,
@@ -636,7 +662,7 @@ fun sendFileMessage(
                                 uploadedImageIds,
                                 imageUris,
                                 inputEnabled
-                            )
+                            ) { onEnd() }
                         }
                     } else {
                         val jsonObj =

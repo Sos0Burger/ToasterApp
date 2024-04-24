@@ -98,7 +98,7 @@ fun News(
         derivedStateOf { allPosts.size }
     }
 
-    val pagerState = rememberPagerState(1) {
+    val pagerState = rememberPagerState(0) {
         2
     }
 
@@ -263,6 +263,7 @@ fun News(
                                             .fillMaxWidth()
                                             .padding(horizontal = 8.dp)
                                     )
+                                    Spacer(modifier = Modifier.height(8.dp))
                                 }
                                 item {
                                     if (allPosts.isEmpty() && !isAllRefreshing) {

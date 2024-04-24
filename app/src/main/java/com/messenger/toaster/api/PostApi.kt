@@ -1,6 +1,7 @@
 package com.messenger.toaster.api
 
 import com.messenger.toaster.data.SortingEnum
+import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.RequestCommentDTO
 import com.messenger.toaster.dto.RequestPostDTO
 import com.messenger.toaster.dto.ResponseCommentDTO
@@ -31,4 +32,7 @@ interface PostApi {
 
     @PUT("/post/{id}/like")
     fun smashLike(@Path("id")id:Int,@Header("Authorization") h1:String):Call<ResponsePostDTO>
+
+    @GET("/post/{id}/images")
+    fun getPostImages(@Path("id")id:Int, @Header("Authorization") h1:String): Call<List<FileDTO>>
 }
