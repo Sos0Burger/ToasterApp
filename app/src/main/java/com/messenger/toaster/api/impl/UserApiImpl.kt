@@ -65,6 +65,10 @@ class UserApiImpl:UserApi {
         return userApi.getFeed(token, page)
     }
 
+    override fun getFeed(query: String, page: Int, h1: String): Call<List<ResponsePostDTO>> {
+        return userApi.getFeed(query, page, h1)
+    }
+
     override fun sendCode(email: String): Call<Unit> {
         return userApi.sendCode(email)
     }
@@ -96,5 +100,9 @@ class UserApiImpl:UserApi {
 
     override fun getUserChats(h1: String): Call<List<ResponseChatDTO>> {
         return userApi.getUserChats(h1)
+    }
+
+    override fun getFriendFeed(query: String, page: Int, h1: String): Call<List<ResponsePostDTO>> {
+        return userApi.getFriendFeed(query, page, h1)
     }
 }

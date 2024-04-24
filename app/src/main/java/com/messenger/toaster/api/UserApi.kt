@@ -100,4 +100,18 @@ interface UserApi {
 
     @GET("user/chats")
     fun getUserChats(@Header("Authorization") h1: String): Call<List<ResponseChatDTO>>
+
+    @GET("user/feed/friends")
+    fun getFriendFeed(
+        @Query("query") query: String,
+        @Query("page") page: Int,
+        @Header("Authorization") h1: String
+    ): Call<List<ResponsePostDTO>>
+
+    @GET("user/feed/all")
+    fun getFeed(
+        @Query("query") query: String,
+        @Query("page") page: Int,
+        @Header("Authorization") h1: String
+    ): Call<List<ResponsePostDTO>>
 }

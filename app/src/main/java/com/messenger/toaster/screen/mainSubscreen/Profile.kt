@@ -27,11 +27,9 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -58,11 +56,9 @@ import com.messenger.toaster.composable.Post
 import com.messenger.toaster.composable.ProfileFriendButtons
 import com.messenger.toaster.data.FriendStatus
 import com.messenger.toaster.data.User
-import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.dto.UserProfileDTO
 import com.messenger.toaster.ui.theme.Orange
 import com.messenger.toaster.viewmodel.ProfilePostViewModel
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -77,24 +73,28 @@ fun Profile(
 
     val context = LocalContext.current
 
+    profilePostViewModel.apply {
+        profilePostViewModel.loadNextPage(id.toInt(), "", context)
+    }
+
     val profile = remember {
         mutableStateOf(UserProfileDTO(-1, "Не загружен", ArrayList(), null, FriendStatus.SELF))
     }
 
     val posts by profilePostViewModel.posts.collectAsState()
+    val currentPage by profilePostViewModel.currentPage.collectAsState()
 
     val postCount = remember {
         derivedStateOf { posts.size }
     }
 
-    val postPage = remember {
-        mutableStateOf(0)
-    }
 
     val postScrollState = rememberLazyListState()
     val endReached by remember {
         derivedStateOf {
-            !postScrollState.canScrollForward && (posts.size >= postCount.value * 15) && (posts.size != 0 || postPage.value == 0)
+            !postScrollState.canScrollForward &&
+                    (posts.size >= postCount.value * 15) &&
+                    (posts.isNotEmpty() || currentPage == 0)
         }
     }
     val isPostLoading = rememberSaveable {
