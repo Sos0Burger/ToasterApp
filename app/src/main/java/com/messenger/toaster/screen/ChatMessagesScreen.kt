@@ -2,6 +2,7 @@ package com.messenger.toaster.screen
 
 import android.content.Context
 import android.net.Uri
+import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -66,6 +67,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -119,7 +121,17 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
     val context = LocalContext.current
 
     val profile = remember {
-        mutableStateOf(UserProfileDTO(id.toInt(), null, ArrayList(), null, FriendStatus.NOTHING))
+        mutableStateOf(
+            UserProfileDTO(
+                id.toInt(),
+                null,
+                ArrayList(),
+                null,
+                FriendStatus.NOTHING,
+                false,
+                1312341412
+            )
+        )
     }
 
     val message = remember {
@@ -276,11 +288,27 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                             fontSize = 16.sp,
                             color = Color.White
                         )
-                        Text(
-                            text = "ID: " + profile.value.id.toString(),
-                            fontSize = 12.sp,
-                            color = Color.White
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "ID: " + profile.value.id.toString(),
+                                fontSize = 12.sp,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (profile.value.isOnline) "В сети" else {
+                                    DateUtils.getRelativeTimeSpanString(
+                                        profile.value.last_online,
+                                        System.currentTimeMillis(),
+                                        DateUtils.MINUTE_IN_MILLIS
+                                    ).toString()
+                                },
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Orange
+                            )
+                        }
+
                     }
                 }
                 IconButton(onClick = {

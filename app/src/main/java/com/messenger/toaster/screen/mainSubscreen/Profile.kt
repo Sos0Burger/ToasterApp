@@ -1,8 +1,10 @@
 package com.messenger.toaster.screen.mainSubscreen
 
+import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -78,7 +81,17 @@ fun Profile(
     }
 
     val profile = remember {
-        mutableStateOf(UserProfileDTO(-1, "Не загружен", ArrayList(), null, FriendStatus.SELF))
+        mutableStateOf(
+            UserProfileDTO(
+                -1,
+                "Не загружен",
+                ArrayList(),
+                null,
+                FriendStatus.SELF,
+                false,
+                1711011112661
+            )
+        )
     }
 
     val posts by profilePostViewModel.posts.collectAsState()
@@ -227,13 +240,24 @@ fun Profile(
                                 fontSize = 16.sp,
                                 color = Color.White
                             )
+                            Text(
+                                text = if (profile.value.isOnline) "В сети" else {
+                                    DateUtils.getRelativeTimeSpanString(
+                                        profile.value.last_online,
+                                        System.currentTimeMillis(),
+                                        DateUtils.MINUTE_IN_MILLIS
+                                    ).toString()
+                                },
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Orange
+                            )
                         }
                         Spacer(Modifier.weight(1f))
                     }
                 }
                 item {
                     Column {
-
                         Text(
                             text = "Друзья(" + profile.value.friends.size + ")",
                             color = Color.White,
@@ -263,6 +287,14 @@ fun Profile(
                                             .size(64.dp)
                                             .clip(CircleShape)
                                             .background(color = Color.DarkGray)
+                                            .clickable {
+                                                navController
+                                                    .navigate("profile/" +
+                                                            profile
+                                                        .value
+                                                        .friends[index]
+                                                        .id)
+                                            }
                                     )
                                     Column {
                                         Text(
@@ -305,7 +337,11 @@ fun Profile(
                 }
 
                 items(count = postCount.value) { index ->
-                    Post(post = remember{mutableStateOf(posts[index])}, true, navController = navController)
+                    Post(
+                        post = remember { mutableStateOf(posts[index]) },
+                        true,
+                        navController = navController
+                    )
                 }
 
                 item {
