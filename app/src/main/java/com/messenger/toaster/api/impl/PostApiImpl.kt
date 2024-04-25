@@ -5,6 +5,7 @@ import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.data.SortingEnum
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.RequestCommentDTO
+import com.messenger.toaster.dto.RequestEditPostDTO
 import com.messenger.toaster.dto.RequestPostDTO
 import com.messenger.toaster.dto.ResponseCommentDTO
 import com.messenger.toaster.dto.ResponsePostDTO
@@ -39,5 +40,9 @@ class PostApiImpl: PostApi {
 
     override fun getPostImages(id: Int, h1: String): Call<List<FileDTO>> {
         return postApi.getPostImages(id, h1)
+    }
+
+    override fun updatePost(id: Int, post: RequestEditPostDTO, h1: String): Call<ResponsePostDTO> {
+        return postApi.updatePost(id, post, h1)
     }
 }

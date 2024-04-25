@@ -180,10 +180,12 @@ fun Friends(navController: NavController) {
                                 friendPendingList.clear()
                                 friendPendingList.addAll(response.body()!!)
                             }
-                            3->{
+
+                            3 -> {
                                 friendSearchList.clear()
                                 friendSearchList.addAll(response.body()!!)
                             }
+
                             else -> {
                                 friendList.clear()
                                 friendList.addAll(response.body()!!)
@@ -319,6 +321,7 @@ fun Friends(navController: NavController) {
                             clickedItem = clickedItem,
                             search = search,
                             navController = navController,
+                            page,
                             getFriends = { getFriends() })
                     }
 
@@ -332,20 +335,22 @@ fun Friends(navController: NavController) {
                             clickedItem = clickedItem,
                             search = search,
                             navController = navController,
+                            page,
                             getFriends = { getFriends() })
                     }
 
                     2 -> {
-                            FriendList(
-                                friendList = friendSentList,
-                                friendsCount = friendsSentCount,
-                                isFriendListEmpty = isFriendSentListEmpty,
-                                snackBarState = snackBarState,
-                                errorMessage = errorMessage,
-                                clickedItem = clickedItem,
-                                search = search,
-                                navController = navController,
-                                getFriends = { getFriends() })
+                        FriendList(
+                            friendList = friendSentList,
+                            friendsCount = friendsSentCount,
+                            isFriendListEmpty = isFriendSentListEmpty,
+                            snackBarState = snackBarState,
+                            errorMessage = errorMessage,
+                            clickedItem = clickedItem,
+                            search = search,
+                            navController = navController,
+                            page,
+                            getFriends = { getFriends() })
                     }
 
                     3 -> {
@@ -358,6 +363,7 @@ fun Friends(navController: NavController) {
                             clickedItem = clickedItem,
                             search = search,
                             navController = navController,
+                            page,
                             getFriends = { getFriends() })
                     }
                 }
@@ -377,6 +383,7 @@ fun FriendList(
     clickedItem: MutableState<Int>,
     search: MutableState<String>,
     navController: NavController,
+    page: Int,
     getFriends: () -> Unit
 ) {
     val viewModel: UpdateViewModel = viewModel()
@@ -391,7 +398,11 @@ fun FriendList(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "Здесь пока пусто...", color = Orange, fontSize = 20.sp)
+                Text(
+                    text = if (page != 3) "Здесь пока пусто..." else "Найдите кого-нибудь!",
+                    color = Orange,
+                    fontSize = 20.sp
+                )
             }
             Row(
                 verticalAlignment = Alignment.Bottom,

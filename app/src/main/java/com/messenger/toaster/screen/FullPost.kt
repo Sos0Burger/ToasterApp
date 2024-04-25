@@ -24,16 +24,21 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,6 +49,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.messenger.toaster.R
@@ -52,12 +58,11 @@ import com.messenger.toaster.composable.Comment
 import com.messenger.toaster.composable.Post
 import com.messenger.toaster.data.SortingEnum
 import com.messenger.toaster.data.User
-import com.messenger.toaster.dto.FriendDTO
 import com.messenger.toaster.dto.RequestCommentDTO
 import com.messenger.toaster.dto.ResponseCommentDTO
-import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.ui.theme.Orange
-import org.json.JSONObject
+import com.messenger.toaster.viewmodel.FullPostViewModel
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -65,15 +70,21 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FullPost(id: String, navController: NavController) {
+fun FullPost(
+    id: String,
+    navController: NavController,
+    from: String,
+    index: Int,
+    fullPostViewModel: FullPostViewModel = viewModel(),
+    onRemove:()->Unit
+) {
     val lazyListState = rememberLazyListState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val comment = remember {
         mutableStateOf("")
     }
-    val isPostLoading = remember {
-        mutableStateOf(true)
-    }
+    val isPostLoading by fullPostViewModel.isPostLoading.collectAsState()
     val isCommentsLoading = remember {
         mutableStateOf(true)
     }
@@ -87,60 +98,14 @@ fun FullPost(id: String, navController: NavController) {
         mutableStateOf(0)
     }
     val scrollState = rememberScrollState()
-    var post = remember {
-        mutableStateOf(
-            ResponsePostDTO(
-                1,
-                null,
-                FriendDTO(-1, null, null),
-                19923293,
-                emptyList(),
-                0,
-                false,
-                0,
-                ResponseCommentDTO(-1, "", FriendDTO(-1, null, null), 1909949324, 1, 0, false)
-            )
-        )
-    }
+    val post by fullPostViewModel.post.collectAsState()
     var comments = remember {
         mutableStateListOf<MutableState<ResponseCommentDTO>>()
     }
-
-    fun getPost() {
-        isPostLoading.value = false
-        val postApi = PostApiImpl()
-        val response = postApi.getPost(id.toInt(), User.getCredentials())
-        response.enqueue(object : Callback<ResponsePostDTO> {
-            override fun onResponse(
-                call: Call<ResponsePostDTO>,
-                response: Response<ResponsePostDTO>
-            ) {
-                if (response.isSuccessful) {
-                    post.value = response.body()!!
-                } else {
-                    val jsonObj = if (response.errorBody() != null) {
-                        response.errorBody()!!.byteString().utf8()
-                    } else {
-                        response.code().toString()
-                    }
-
-                    Log.d(
-                        "server",
-                        response.code().toString()
-                    )
-                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
-                        .show()
-                }
-                isPostLoading.value = false
-            }
-
-            override fun onFailure(call: Call<ResponsePostDTO>, t: Throwable) {
-                Log.d("server", t.message.toString())
-                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-                isPostLoading.value = false
-            }
-        })
+    LaunchedEffect(Unit) {
+        fullPostViewModel.getPost(id, context = context)
     }
+
 
     fun getComments() {
         isCommentsLoading.value = false
@@ -182,10 +147,6 @@ fun FullPost(id: String, navController: NavController) {
             }
         })
     }
-    if (isPostLoading.value) {
-        getPost()
-        isPostLoading.value = false
-    }
     if (isCommentsLoading.value) {
         getComments()
         isCommentsLoading.value = false
@@ -219,7 +180,7 @@ fun FullPost(id: String, navController: NavController) {
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
-                IconButton(onClick = { getPost() }) {
+                IconButton(onClick = { fullPostViewModel.getPost(id, context = context) }) {
                     Icon(
                         painter = painterResource(id = R.drawable.update),
                         contentDescription = null,
@@ -237,7 +198,16 @@ fun FullPost(id: String, navController: NavController) {
                 LazyColumn(state = lazyListState, modifier = Modifier.weight(1f)) {
                     item {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Post(post = post, isLatestComment = false, navController)
+                        Post(
+                            post = mutableStateOf(post),
+                            isLatestComment = false,
+                            navController,
+                            from,
+                            index
+                        ) {
+                            onRemove()
+                            navController.popBackStack()
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                     item {
@@ -289,7 +259,7 @@ fun FullPost(id: String, navController: NavController) {
                         }
                     }
                     items(count = comments.size) { index ->
-                        Comment(comment = comments[index], navController){
+                        Comment(comment = comments[index], navController) {
                             comments.remove(comments[index])
                         }
                     }
@@ -298,6 +268,7 @@ fun FullPost(id: String, navController: NavController) {
                 TextField(
                     value = comment.value,
                     onValueChange = { comment.value = it },
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(scrollState)
@@ -320,6 +291,10 @@ fun FullPost(id: String, navController: NavController) {
                                         if (response.isSuccessful) {
                                             comments.add(0, mutableStateOf(response.body()!!))
                                             comment.value = ""
+                                            scope.launch {
+                                                lazyListState.animateScrollToItem(0, 0)
+                                            }
+
                                         } else {
                                             val jsonObj = if (response.errorBody() != null) {
                                                 response.errorBody()!!.byteString().utf8()
@@ -377,5 +352,5 @@ fun FullPost(id: String, navController: NavController) {
 @Preview(showBackground = true, backgroundColor = 1250067)
 @Composable
 fun FullPostPreview() {
-    FullPost(id = "1", navController = rememberNavController())
+    FullPost(id = "1", navController = rememberNavController(), "news", 1){}
 }

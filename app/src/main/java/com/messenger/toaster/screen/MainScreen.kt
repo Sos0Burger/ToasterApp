@@ -31,10 +31,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.messenger.toaster.R
+import com.messenger.toaster.data.ImageMode
+import com.messenger.toaster.data.PostMode
 import com.messenger.toaster.data.User
 import com.messenger.toaster.screen.mainSubscreen.Chat
 import com.messenger.toaster.screen.mainSubscreen.CreatePostScreen
@@ -43,6 +46,9 @@ import com.messenger.toaster.screen.mainSubscreen.News
 import com.messenger.toaster.screen.mainSubscreen.Profile
 import com.messenger.toaster.screen.mainSubscreen.Settings
 import com.messenger.toaster.ui.theme.Orange
+import com.messenger.toaster.viewmodel.AllNewsViewModel
+import com.messenger.toaster.viewmodel.FullPostViewModel
+import com.messenger.toaster.viewmodel.ProfilePostViewModel
 
 @Composable
 fun MainScreen() {
@@ -75,13 +81,16 @@ fun MainScreen() {
         .width(48.dp)
     val iconTextModifier = Modifier.size(32.dp, 32.dp)
     val navController = rememberNavController()
+    val newsViewModel: AllNewsViewModel = viewModel()
+    val profilePostViewModel: ProfilePostViewModel = viewModel()
+    val fullPostViewModel: FullPostViewModel = viewModel()
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         NavHost(
             navController = navController,
             startDestination = "news"
         ) {
             composable("news") {
-                News(navController = navController)
+                News(navController = navController, allNewsViewModel = newsViewModel)
             }
             composable("chat") {
                 Chat(navController)
@@ -89,6 +98,7 @@ fun MainScreen() {
             composable("chatMessages/{userID}") { backStackEntry ->
                 ChatMessagesScreen(
                     backStackEntry.arguments?.getString("userID")!!,
+                    navController = navController,
                     onBack = {
                         navController.popBackStack()
                     },
@@ -102,8 +112,13 @@ fun MainScreen() {
                 Friends(navController)
             }
             composable("profile/{userId}") { backStackEntry ->
-                Profile(backStackEntry.arguments?.getString("userId")!!, navController) {
+                Profile(
+                    backStackEntry.arguments?.getString("userId")!!,
+                    navController,
+                    profilePostViewModel
+                ) {
                     navController.navigate("postCreation")
+
                 }
             }
             composable("settings") {
@@ -112,18 +127,64 @@ fun MainScreen() {
                 }
             }
             composable("postCreation") {
-                CreatePostScreen(navController)
+                CreatePostScreen(mode = PostMode.CREATE, navController = navController)
             }
-            composable("post/{postID}") { backStackEntry ->
+            composable("news/postEdit/{id}/{index}") { backStackEntry ->
+                CreatePostScreen(
+                    id = backStackEntry.arguments?.getString("id")!!,
+                    mode = PostMode.EDIT,
+                    navController = navController,
+                    newsViewModel = newsViewModel,
+                    index = backStackEntry.arguments?.getString("index")!!.toInt()
+                )
+            }
+            composable("profile/postEdit/{id}/{index}") { backStackEntry ->
+                CreatePostScreen(
+                    id = backStackEntry.arguments?.getString("id")!!,
+                    mode = PostMode.EDIT,
+                    navController = navController,
+                    profilePostViewModel = profilePostViewModel,
+                    index = backStackEntry.arguments?.getString("index")!!.toInt()
+                )
+            }
+            composable("news/post/{postID}/{index}") { backStackEntry ->
                 FullPost(
                     id = backStackEntry.arguments?.getString("postID")!!,
-                    navController = navController
-                )
+                    navController = navController,
+                    "news",
+                    backStackEntry.arguments?.getString("index")!!.toInt(),
+                    fullPostViewModel
+                ) {
+                    newsViewModel.remove(backStackEntry.arguments?.getString("index")!!.toInt())
+                }
+            }
+            composable("profile/post/{postID}/{index}") { backStackEntry ->
+                FullPost(
+                    id = backStackEntry.arguments?.getString("postID")!!,
+                    navController = navController,
+                    "profile",
+                    backStackEntry.arguments?.getString("index")!!.toInt(),
+                    fullPostViewModel
+                ) {
+                    profilePostViewModel.remove(
+                        backStackEntry.arguments?.getString("index")!!.toInt()
+                    )
+                }
             }
             composable("post/{postID}/images/{initial}") { backStackEntry ->
                 FullScreenImages(
-                    post = backStackEntry.arguments?.getString("postID")!!,
-                    initial = backStackEntry.arguments?.getString("initial")!!
+                    id = backStackEntry.arguments?.getString("postID")!!,
+                    initial = backStackEntry.arguments?.getString("initial")!!,
+                    ImageMode.POST
+                ) {
+                    navController.popBackStack()
+                }
+            }
+            composable("message/{messageID}/images/{initial}") { backStackEntry ->
+                FullScreenImages(
+                    id = backStackEntry.arguments?.getString("messageID")!!,
+                    initial = backStackEntry.arguments?.getString("initial")!!,
+                    ImageMode.MESSAGE
                 ) {
                     navController.popBackStack()
                 }

@@ -21,8 +21,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -68,9 +71,15 @@ import retrofit2.Response
 fun Post(
     post: MutableState<ResponsePostDTO>,
     isLatestComment: Boolean,
-    navController: NavController
+    navController: NavController,
+    from: String,
+    index: Int? = null,
+    onRemove: () -> Unit
 ) {
-    var isLatestCommentState = remember {
+    val isDropDown = remember {
+        mutableStateOf(false)
+    }
+    val isLatestCommentState = remember {
         mutableStateOf(isLatestComment)
     }
     var isTextExpand by remember {
@@ -85,50 +94,92 @@ fun Post(
             .padding(bottom = 8.dp)
             .fillMaxWidth(1f)
             .background(color = Night, shape = MaterialTheme.shapes.medium)
-    ) {
-        Row(modifier = Modifier.padding(top = 8.dp)) {
-            AsyncImage(
-                model = if (post.value.creator.image == null)
-                    "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
-                else
-                    ImageRequest.Builder(LocalContext.current)
-                        .data(
-                            RetrofitClient.getInstance().baseUrl().toString() +
-                                    "file/" +
-                                    post.value.creator.image!!.id
-                        )
-                        .crossfade(true)
-                        .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(color = Color.DarkGray)
-                    .clickable {
-                        navController.navigate("profile/" + post.value.creator.id)
-                    }
-            )
-            Column {
-                Text(
-                    text = post.value.creator.nickname
-                        ?: "Альтернативное имя не указано",
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
-                Text(
-                    text = "ID: " + post.value.creator.id.toString(),
-                    fontSize = 12.sp,
-                    color = Color.White
-                )
-                Text(
-                    text = TimeConverter.longToLocalTime(post.value.date),
-                    fontSize = 12.sp,
-                    color = Color.White
-                )
-
+            .clickable(enabled = isLatestComment) {
+                navController.navigate(from + "/post/" + post.value.id.toString() + "/" + index)
             }
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row {
+                AsyncImage(
+                    model = if (post.value.creator.image == null)
+                        "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
+                    else
+                        ImageRequest.Builder(LocalContext.current)
+                            .data(
+                                RetrofitClient.getInstance().baseUrl().toString() +
+                                        "file/" +
+                                        post.value.creator.image!!.id
+                            )
+                            .crossfade(true)
+                            .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(color = Color.DarkGray)
+                        .clickable {
+                            navController.navigate("profile/" + post.value.creator.id)
+                        }
+                )
+                Column {
+                    Text(
+                        text = post.value.creator.nickname
+                            ?: "Альтернативное имя не указано",
+                        fontSize = 16.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "ID: " + post.value.creator.id.toString(),
+                        fontSize = 12.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = TimeConverter.longToLocalTime(post.value.date),
+                        fontSize = 12.sp,
+                        color = Color.White
+                    )
+
+                }
+            }
+            if (post.value.creator.id == User.USER_ID) {
+                Box {
+                    if (isDropDown.value) {
+                        DropdownMenu(
+                            expanded = isDropDown.value,
+                            onDismissRequest = { isDropDown.value = false }) {
+                            DropdownMenuItem(
+                                text = { Text(text = "Редактировать") },
+                                onClick = {
+                                    isDropDown.value = false
+                                    navController.navigate(
+                                        from + "/postEdit/" +
+                                                post.value.id + "/" + index
+                                    )
+                                })
+                            DropdownMenuItem(text = { Text(text = "Удалить") }, onClick = {
+
+                                isDropDown.value = false
+                                onRemove()
+                            })
+                        }
+                    }
+                    IconButton(onClick = { isDropDown.value = true }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.more),
+                            contentDescription = null,
+                            tint = Orange
+                        )
+                    }
+                }
+            }
+
         }
 
         Divider(
@@ -183,7 +234,7 @@ fun Post(
                                 .clip(RoundedCornerShape(5))
                                 .height(512.dp)
                                 .clickable {
-                                    navController.navigate("post/"+post.value.id+"/images/"+page)
+                                    navController.navigate(from + "/post/" + post.value.id.toString() + "/" + index)
                                 }
                         )
                     }
@@ -269,7 +320,7 @@ fun Post(
                 Surface(shape = CircleShape,
                     color = Color.Transparent,
                     onClick = {
-                        navController.navigate("post/" + post.value.id.toString())
+                        navController.navigate(from + "/post/" + post.value.id.toString() + "/" + index)
                     }) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -340,6 +391,7 @@ fun PostPreview() {
             )
         },
         true,
-        rememberNavController()
-    )
+        rememberNavController(),
+        ""
+    ) {}
 }

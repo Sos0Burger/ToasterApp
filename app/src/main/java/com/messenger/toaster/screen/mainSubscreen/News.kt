@@ -166,7 +166,7 @@ fun News(
                     }
                 }
             }
-            HorizontalPager(state = pagerState) {page ->
+            HorizontalPager(state = pagerState) { page ->
                 when (page) {
                     0 -> {
                         SwipeRefresh(
@@ -210,8 +210,11 @@ fun News(
                                     Post(
                                         post = remember { mutableStateOf(friendPosts[index]) },
                                         true,
-                                        navController
-                                    )
+                                        navController,
+                                        "news",
+                                        index
+                                    ) {
+                                    }
                                 }
                             }
                         }
@@ -281,12 +284,18 @@ fun News(
                                         }
                                     }
                                 }
-                                items(count = allPostCount.value) { index ->
+                                items(
+                                    count = allPostCount.value,
+                                    key = { index -> allPosts[index].id }) { index ->
                                     Post(
                                         post = remember { mutableStateOf(allPosts[index]) },
                                         true,
-                                        navController
-                                    )
+                                        navController,
+                                        "news",
+                                        index
+                                    ) {
+                                        allNewsViewModel.remove(index)
+                                    }
                                 }
                                 if (endReachedAll && !isAllRefreshing) {
                                     friendNewsViewModel.loadNextPage("", context)

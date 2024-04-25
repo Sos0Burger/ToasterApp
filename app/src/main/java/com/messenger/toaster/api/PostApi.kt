@@ -3,6 +3,7 @@ package com.messenger.toaster.api
 import com.messenger.toaster.data.SortingEnum
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.RequestCommentDTO
+import com.messenger.toaster.dto.RequestEditPostDTO
 import com.messenger.toaster.dto.RequestPostDTO
 import com.messenger.toaster.dto.ResponseCommentDTO
 import com.messenger.toaster.dto.ResponsePostDTO
@@ -35,4 +36,6 @@ interface PostApi {
 
     @GET("/post/{id}/images")
     fun getPostImages(@Path("id")id:Int, @Header("Authorization") h1:String): Call<List<FileDTO>>
+    @PUT("/post/{id}")
+    fun updatePost(@Path("id")id:Int, @Body post:RequestEditPostDTO, @Header("Authorization") h1:String):Call<ResponsePostDTO>
 }

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -189,7 +188,6 @@ fun Profile(
                 IconButton(onClick = {
                     getProfile()
                     profilePostViewModel.refresh(id.toInt(), "", context)
-                    //getPosts()
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.update),
@@ -289,11 +287,13 @@ fun Profile(
                                             .background(color = Color.DarkGray)
                                             .clickable {
                                                 navController
-                                                    .navigate("profile/" +
-                                                            profile
-                                                        .value
-                                                        .friends[index]
-                                                        .id)
+                                                    .navigate(
+                                                        "profile/" +
+                                                                profile
+                                                                    .value
+                                                                    .friends[index]
+                                                                    .id
+                                                    )
                                             }
                                     )
                                     Column {
@@ -336,12 +336,16 @@ fun Profile(
                     }
                 }
 
-                items(count = postCount.value) { index ->
+                items(count = postCount.value, key = { index -> posts[index].id }) { index ->
                     Post(
                         post = remember { mutableStateOf(posts[index]) },
                         true,
-                        navController = navController
-                    )
+                        navController = navController,
+                        "profile",
+                        index
+                    ) {
+                        profilePostViewModel.remove(index)
+                    }
                 }
 
                 item {

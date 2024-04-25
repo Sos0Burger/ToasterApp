@@ -336,7 +336,7 @@ fun Settings(back:()->Unit) {
                     if (nickname.value.length in 3..20) {
                         updateNickname()
                     } else {
-                        if (nickname.value.isEmpty()) {
+                        if (nickname.value.length<3 && nickname.value.isNotEmpty()) {
                             Toast.makeText(
                                 context,
                                 "Имя должно быть от 3 до 20 символов",

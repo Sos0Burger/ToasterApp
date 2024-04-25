@@ -43,7 +43,9 @@ import coil.request.ImageRequest
 import com.messenger.toaster.R
 import com.messenger.toaster.api.RetrofitClient
 import com.messenger.toaster.api.impl.FileApiImpl
+import com.messenger.toaster.api.impl.MessageApiImpl
 import com.messenger.toaster.api.impl.PostApiImpl
+import com.messenger.toaster.data.ImageMode
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.ui.theme.Orange
@@ -58,7 +60,7 @@ import java.io.FileOutputStream
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun FullScreenImages(post: String, initial: String, onBack: () -> Unit) {
+fun FullScreenImages(id: String, initial: String, mode:ImageMode, onBack: () -> Unit) {
     val context = LocalContext.current
 
     val zoomableState = rememberZoomableState()
@@ -223,8 +225,14 @@ fun FullScreenImages(post: String, initial: String, onBack: () -> Unit) {
         }
     }
     fun getImages() {
-        val postApi = PostApiImpl()
-        val response = postApi.getPostImages(post.toInt(), User.getCredentials())
+        val response =
+        if (mode == ImageMode.POST){
+            PostApiImpl().getPostImages(id.toInt(), User.getCredentials())
+        }
+        else{
+            MessageApiImpl().getMessageImages(id.toInt(), User.getCredentials())
+        }
+
         response.enqueue(object : Callback<List<FileDTO>> {
             override fun onResponse(call: Call<List<FileDTO>>, response: Response<List<FileDTO>>) {
                 if (response.isSuccessful) {
@@ -251,6 +259,7 @@ fun FullScreenImages(post: String, initial: String, onBack: () -> Unit) {
             }
         })
     }
+
     LaunchedEffect(Unit) {
         getImages()
     }
@@ -260,6 +269,6 @@ fun FullScreenImages(post: String, initial: String, onBack: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun FullScreenImagesPreview() {
-    FullScreenImages("1", "1") {
+    FullScreenImages("1", "1", mode = ImageMode.MESSAGE) {
     }
 }

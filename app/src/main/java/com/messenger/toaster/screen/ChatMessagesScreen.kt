@@ -1,6 +1,5 @@
 package com.messenger.toaster.screen
 
-import android.content.Context
 import android.net.Uri
 import android.text.format.DateUtils
 import android.util.Log
@@ -11,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,12 +33,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +55,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -64,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -72,50 +77,52 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.messenger.toaster.R
 import com.messenger.toaster.api.RetrofitClient
-import com.messenger.toaster.api.impl.FileApiImpl
 import com.messenger.toaster.api.impl.MessageApiImpl
 import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.converter.TimeConverter
-import com.messenger.toaster.converter.getFileName
 import com.messenger.toaster.data.FriendStatus
 import com.messenger.toaster.data.User
-import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.FriendDTO
-import com.messenger.toaster.dto.RequestMessageDTO
 import com.messenger.toaster.dto.ResponseMessageDTO
 import com.messenger.toaster.dto.UserProfileDTO
-import com.messenger.toaster.requestbody.InputStreamRequestBody
 import com.messenger.toaster.ui.theme.Graphite
 import com.messenger.toaster.ui.theme.Orange
+import com.messenger.toaster.viewmodel.MessagesViewModel
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.Date
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
+fun ChatMessagesScreen(
+    id: String,
+    messagesViewModel: MessagesViewModel = viewModel(),
+    navController: NavController,
+    onBack: () -> Unit,
+    onProfile: () -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
     val messages: MutableList<ResponseMessageDTO> = remember {
         mutableStateListOf()
     }
     User.messages = messages
+    val images by messagesViewModel.images.collectAsState()
+    val isLoaded by messagesViewModel.isLoaded.collectAsState()
 
-    val imageUris: MutableList<Uri> = remember {
-        mutableStateListOf()
-    }
     val imageCount = remember {
         derivedStateOf {
-            imageUris.size
+            images.size
         }
     }
     val context = LocalContext.current
@@ -133,7 +140,6 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
             )
         )
     }
-
     val message = remember {
         mutableStateOf("")
     }
@@ -151,7 +157,9 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
         if (uris.size > 10) {
             Toast.makeText(context, "Максимум 10 изображений", Toast.LENGTH_SHORT).show()
         } else {
-            imageUris.addAll(uris)
+            messagesViewModel.viewModelScope.launch {
+                messagesViewModel.upload(uris, context)
+            }
         }
     }
 
@@ -230,6 +238,10 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
     if (isProfileLoading.value) {
         getProfile()
     }
+    val isEdit = remember {
+        mutableStateOf(false)
+    }
+    var editMessage: MutableState<ResponseMessageDTO>? = null
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -337,15 +349,36 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                     key = { index -> messages.getOrNull(index)?.id ?: index },
                     count = messages.size
                 ) { index ->
+                    val isDropDown = remember {
+                        mutableStateOf(false)
+                    }
+                    val isDialog = remember {
+                        mutableStateOf(false)
+                    }
                     if (messages.getOrNull(index) != null) {
-
                         Row(
-                            horizontalArrangement = if (messages[index].sender.id != profile.value.id) Arrangement.End else Arrangement.Start,
-                            modifier = Modifier.fillMaxWidth(1f)
+                            horizontalArrangement = if (messages[index].sender.id != profile.value.id)
+                                Arrangement.End
+                            else
+                                Arrangement.Start,
+                            modifier = Modifier
+                                .fillMaxWidth(1f)
+                                .pointerInput(Unit) {
+                                    detectTapGestures(onLongPress = {
+                                        if (messages[index].sender.id == User.USER_ID) {
+                                            isDropDown.value = true
+                                        }
+                                    })
+                                }
                         ) {
                             Card(
                                 shape = MaterialTheme.shapes.medium,
-                                colors = CardDefaults.cardColors(containerColor = if (messages[index].sender.id != profile.value.id) Color.DarkGray else Graphite),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if
+                                                             (messages[index].sender.id != profile.value.id)
+                                        Color.DarkGray else
+                                        Graphite
+                                ),
                                 modifier = Modifier
                                     .padding(
                                         if (messages[index].sender.id != profile.value.id) PaddingValues(
@@ -404,6 +437,21 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                                                     modifier = Modifier
                                                         .clip(RectangleShape)
                                                         .height(512.dp)
+                                                        .pointerInput(Unit) {
+                                                            detectTapGestures(onTap = {
+                                                                navController
+                                                                    .navigate(
+                                                                        "message/" +
+                                                                                messages[index].id +
+                                                                                "/images/" +
+                                                                                index
+                                                                    )
+                                                            },
+                                                                onLongPress = {
+                                                                    isDropDown.value = true
+                                                                })
+
+                                                        }
                                                 )
                                             }
                                         }
@@ -444,12 +492,68 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                                         tint = if (messages[index].read) Orange else Color.Black
                                     )
                                 }
-
+                                DropdownMenu(
+                                    expanded = isDropDown.value,
+                                    onDismissRequest = { isDropDown.value = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text(text = "Редактировать") },
+                                        onClick = {
+                                            editMessage = mutableStateOf(messages[index])
+                                            message.value = messages[index].text.toString()
+                                            messagesViewModel.set(messages[index].attachments)
+                                            isEdit.value = true
+                                            isDropDown.value = false
+                                        })
+                                    DropdownMenuItem(text = { Text(text = "Удалить") }, onClick = {
+                                        isDialog.value = true
+                                        isDropDown.value = false
+                                    })
+                                }
+                                if (isDialog.value) {
+                                    val buttonColor =
+                                        ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+                                    AlertDialog(
+                                        onDismissRequest = { isDialog.value = false },
+                                        confirmButton = {
+                                            Button(onClick = {
+                                                messagesViewModel.deleteMessage(
+                                                    context,
+                                                    messages[index].id
+                                                ) {
+                                                    messages.removeAt(index)
+                                                    isDialog.value = false
+                                                }
+                                            }, colors = buttonColor) {
+                                                Text(
+                                                    text = "Да",
+                                                    color = Orange,
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        },
+                                        dismissButton = {
+                                            Button(
+                                                onClick = { isDialog.value = false },
+                                                colors = buttonColor
+                                            ) {
+                                                Text(text = "Нет", color = Color.White)
+                                            }
+                                        },
+                                        title = {
+                                            Text(
+                                                text = "Удалить сообщение?",
+                                                color = Color.White,
+                                                fontSize = 16.sp
+                                            )
+                                        })
+                                }
                             }
+
                         }
                     }
-                }
 
+                }
             }
             LazyRow(
                 contentPadding = PaddingValues(4.dp),
@@ -458,7 +562,7 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                 items(imageCount.value) { index ->
                     Button(
                         onClick = {
-                            imageUris.removeAt(index)
+                            messagesViewModel.remove(index)
                         },
                         enabled = inputEnabled.value,
                         contentPadding = PaddingValues(0.dp),
@@ -471,7 +575,10 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                         )
                     ) {
                         Image(
-                            painter = rememberAsyncImagePainter(model = imageUris[index]),
+                            painter = rememberAsyncImagePainter(
+                                model = RetrofitClient.getInstance()
+                                    .baseUrl().toString() + "file/" + images[index].id
+                            ),
                             contentDescription = null,
                             contentScale = ContentScale.Fit
                         )
@@ -521,8 +628,28 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                 IconButton(
                     onClick = {
                         inputEnabled.value = false
-                        if (imageUris.isEmpty()) {
-                            sendMessage(
+                        if (isEdit.value) {
+                            if (editMessage != null) {
+                                messagesViewModel.editMessage(
+                                    context,
+                                    editMessage!!.value.id,
+                                    messages.indexOf(
+                                        editMessage!!.value
+                                    ),
+                                    message,
+                                    messages,
+                                    images.map { it.id }.toList(),
+                                    inputEnabled
+                                ) {
+                                    coroutineScope.launch {
+                                        messagesViewModel.clearImages()
+                                        messageScrollState.animateScrollToItem(0)
+                                    }
+                                    isEdit.value = false
+                                }
+                            }
+                        } else {
+                            messagesViewModel.sendMessage(
                                 context,
                                 message,
                                 FriendDTO(
@@ -531,34 +658,16 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
                                     profile.value.image
                                 ),
                                 messages,
-                                ArrayList(),
-                                imageUris,
+                                images.map { it.id }.toList(),
                                 inputEnabled
                             ) {
                                 coroutineScope.launch {
+                                    messagesViewModel.clearImages()
                                     messageScrollState.animateScrollToItem(0)
                                 }
                             }
-
-                        } else {
-                            sendFileMessage(
-                                context = context,
-                                imageUris = imageUris,
-                                messages = messages,
-                                message = message,
-                                inputEnabled = inputEnabled,
-                                friendDTO = FriendDTO(
-                                    profile.value.id,
-                                    profile.value.nickname,
-                                    profile.value.image
-                                )
-                            ) {
-                                coroutineScope.launch {
-                                    messageScrollState.animateScrollToItem(0)
-                                }
-                            }
-
                         }
+
 
                     },
                     colors = IconButtonDefaults.iconButtonColors(
@@ -594,122 +703,6 @@ fun ChatMessagesScreen(id: String, onBack: () -> Unit, onProfile: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun ChatMessagesScreenPreview() {
-    ChatMessagesScreen("1", onBack = {}, onProfile = {})
+    ChatMessagesScreen("1", navController = rememberNavController(), onBack = {}, onProfile = {})
 }
 
-fun sendMessage(
-    context: Context,
-    message: MutableState<String>,
-    friendDTO: FriendDTO,
-    messages: MutableList<ResponseMessageDTO>,
-    uploadedImageIds: MutableList<Int>,
-    imageUris: MutableList<Uri>,
-    inputEnabled: MutableState<Boolean>,
-    onEnd: () -> Unit
-) {
-    val messageApi = MessageApiImpl()
-    val requestMessage = RequestMessageDTO(
-        message.value,
-        friendDTO.id,
-        Date().time,
-        uploadedImageIds
-    )
-    val response = messageApi.send(requestMessage, User.getCredentials())
-    response.enqueue(object : Callback<ResponseMessageDTO> {
-        override fun onResponse(
-            call: Call<ResponseMessageDTO>,
-            response: Response<ResponseMessageDTO>
-        ) {
-            if (response.code() == 201) {
-                messages.add(0, response.body()!!)
-                message.value = ""
-                imageUris.clear()
-                onEnd()
-            } else {
-                val jsonObj =
-                    if (response.errorBody() != null) response.errorBody()!!.byteString()
-                        .utf8() else response.code().toString()
-                Log.d(
-                    "server",
-                    response.code().toString()
-                )
-                Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
-            }
-            inputEnabled.value = true
-        }
-
-        override fun onFailure(call: Call<ResponseMessageDTO>, t: Throwable) {
-            Log.d("server", t.message.toString())
-            Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-            inputEnabled.value = true
-        }
-    })
-
-}
-
-fun sendFileMessage(
-    context: Context,
-    imageUris: MutableList<Uri>,
-    message: MutableState<String>,
-    friendDTO: FriendDTO,
-    messages: MutableList<ResponseMessageDTO>,
-    inputEnabled: MutableState<Boolean>,
-    onEnd: () -> Unit
-) {
-    val files = imageUris.toList()
-    if (files.isNotEmpty()) {
-        val fileApi = FileApiImpl()
-        val multipartFiles = ArrayList<MultipartBody.Part>()
-        val cR = context.contentResolver
-        for (item in files) {
-            multipartFiles.add(
-                MultipartBody.Part.createFormData(
-                    "attachment",
-                    getFileName(cR, item),
-                    InputStreamRequestBody(
-                        cR.getType(item)!!.toMediaType(),
-                        context.contentResolver,
-                        item
-                    )
-                )
-            )
-        }
-        val uploadedImageIds = ArrayList<Int>()
-        for (item in multipartFiles) {
-            val response = fileApi.upload(User.getCredentials(), item)
-            response.enqueue(object : Callback<FileDTO> {
-                override fun onResponse(call: Call<FileDTO>, response: Response<FileDTO>) {
-                    if (response.code() == 201) {
-                        uploadedImageIds.add(response.body()!!.id)
-                        if (uploadedImageIds.size == files.size) {
-                            sendMessage(
-                                context,
-                                message,
-                                friendDTO,
-                                messages,
-                                uploadedImageIds,
-                                imageUris,
-                                inputEnabled
-                            ) { onEnd() }
-                        }
-                    } else {
-                        val jsonObj =
-                            if (response.errorBody() != null) response.errorBody()!!.byteString()
-                                .utf8() else response.code().toString()
-                        Log.d(
-                            "server",
-                            response.code().toString()
-                        )
-                        Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
-
-                    }
-                }
-
-                override fun onFailure(call: Call<FileDTO>, t: Throwable) {
-                    Log.d("server", t.message.toString())
-                    Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-                }
-            })
-        }
-    }
-}

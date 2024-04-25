@@ -1,8 +1,6 @@
 package com.messenger.toaster.screen.mainSubscreen
 
-import android.content.Context
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,9 +36,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -53,29 +51,33 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.messenger.toaster.R
-import com.messenger.toaster.api.impl.FileApiImpl
-import com.messenger.toaster.api.impl.PostApiImpl
-import com.messenger.toaster.converter.getFileName
-import com.messenger.toaster.data.User
-import com.messenger.toaster.dto.FileDTO
-import com.messenger.toaster.dto.RequestPostDTO
-import com.messenger.toaster.dto.ResponsePostDTO
-import com.messenger.toaster.requestbody.InputStreamRequestBody
+import com.messenger.toaster.api.RetrofitClient
+import com.messenger.toaster.data.PostMode
+import com.messenger.toaster.dto.RequestEditPostDTO
 import com.messenger.toaster.ui.theme.Orange
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.util.Date
+import com.messenger.toaster.viewmodel.AllNewsViewModel
+import com.messenger.toaster.viewmodel.PostViewModel
+import com.messenger.toaster.viewmodel.ProfilePostViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreatePostScreen(navController:NavController) {
-
+fun CreatePostScreen(
+    id: String? = null,
+    mode: PostMode,
+    postViewModel: PostViewModel = viewModel(),
+    navController: NavController,
+    index:Int? = null,
+    newsViewModel: AllNewsViewModel? = null,
+    profilePostViewModel: ProfilePostViewModel? = null
+) {
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val text = remember {
         mutableStateOf("")
@@ -83,17 +85,23 @@ fun CreatePostScreen(navController:NavController) {
     LaunchedEffect(scrollState.maxValue) {
         scrollState.scrollTo(scrollState.maxValue)
     }
-
-    val imageUris: MutableList<Uri> = remember {
-        mutableStateListOf()
-    }
-    val imageCount = remember {
-        derivedStateOf {
-            imageUris.size
+    LaunchedEffect(Unit) {
+        if (mode == PostMode.EDIT && id != null) {
+            postViewModel.getPost(
+                id = id,
+                context = context,
+                text = text
+            ) { navController.popBackStack() }
         }
     }
-
-    val context = LocalContext.current
+    val images by postViewModel.images.collectAsState()
+    val isLoaded by postViewModel.isLoaded.collectAsState()
+    val post by postViewModel.post.collectAsState()
+    val imageCount = remember {
+        derivedStateOf {
+            images.size
+        }
+    }
 
     val launcher = rememberLauncherForActivityResult(
         contract =
@@ -102,7 +110,9 @@ fun CreatePostScreen(navController:NavController) {
         if (uris.size > 10) {
             Toast.makeText(context, "Максимум 10 изображений", Toast.LENGTH_SHORT).show()
         } else {
-            imageUris.addAll(uris)
+            postViewModel.viewModelScope.launch {
+                postViewModel.upload(uris, context)
+            }
         }
     }
 
@@ -121,7 +131,7 @@ fun CreatePostScreen(navController:NavController) {
                 IconButton(
                     onClick = {
                         navController.popBackStack()
-                              },
+                    },
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = Color.Transparent,
                         contentColor = Color.White
@@ -135,24 +145,60 @@ fun CreatePostScreen(navController:NavController) {
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = { sendFilePost(context, imageUris , text, inputEnabled, navController ) },
+                    onClick = {
+                        if (mode == PostMode.CREATE) {
+                            postViewModel.sendPost(
+                                context,
+                                text,
+                                images.map { it.id },
+                                inputEnabled,
+                                navController
+                            )
+                        } else if (mode == PostMode.EDIT && id != null && index!=null) {
+                            if (newsViewModel!=null){
+                                postViewModel.updatePost(
+                                    id = id.toInt(),
+                                    post= RequestEditPostDTO(text = text.value, images.map { it.id }),
+                                    context = context,
+                                    inputEnabled = inputEnabled,
+                                    index = index,
+                                    allNewsViewModel = newsViewModel
+                                ) {
+                                    navController.popBackStack()
+                                }
+                            }
+                            else if(profilePostViewModel!=null){
+                                postViewModel.updatePost(
+                                    id = id.toInt(),
+                                    post= RequestEditPostDTO(text = text.value, images.map { it.id }),
+                                    context = context,
+                                    inputEnabled = inputEnabled,
+                                    index = index,
+                                    profilePostViewModel = profilePostViewModel
+                                ) {
+                                    navController.popBackStack()
+                                }
+                            }
+
+                        }
+
+                    },
                     colors = IconButtonDefaults.iconButtonColors(
                         disabledContentColor = Color.DarkGray,
                         disabledContainerColor = Color.Transparent,
                         containerColor = Color.Transparent,
                         contentColor = Orange
                     ),
-                    enabled = text.value.isNotEmpty()||imageUris.isNotEmpty()&&inputEnabled.value
+                    enabled = text.value.isNotEmpty() || images.isNotEmpty() && inputEnabled.value
                 ) {
 
-                    if (inputEnabled.value) {
+                    if (inputEnabled.value && isLoaded) {
                         Icon(
                             painter = painterResource(id = R.drawable.check_icon),
                             contentDescription = null,
                             modifier = Modifier.size(48.dp)
                         )
-                    }
-                    else{
+                    } else {
                         CircularProgressIndicator(color = Orange, modifier = Modifier.size(32.dp))
                     }
                 }
@@ -211,7 +257,7 @@ fun CreatePostScreen(navController:NavController) {
                 }
                 items(count = imageCount.value) { index ->
                     Button(
-                        onClick = { imageUris.removeAt(index) },
+                        onClick = { postViewModel.remove(index) },
                         modifier = Modifier
                             .fillMaxHeight(1f)
                             .width(128.dp),
@@ -222,7 +268,10 @@ fun CreatePostScreen(navController:NavController) {
                         enabled = inputEnabled.value
                     ) {
                         Image(
-                            painter = rememberAsyncImagePainter(model = imageUris[index]),
+                            painter = rememberAsyncImagePainter(
+                                model = RetrofitClient.getInstance()
+                                    .baseUrl().toString() + "file/" + images[index].id
+                            ),
                             contentDescription = null,
                             contentScale = ContentScale.Crop
                         )
@@ -234,121 +283,9 @@ fun CreatePostScreen(navController:NavController) {
     }
 }
 
-fun sendFilePost(
-    context: Context,
-    imageUris: MutableList<Uri>,
-    text: MutableState<String>,
-    inputEnabled: MutableState<Boolean>,
-    navController: NavController
-) {
-    inputEnabled.value = false
-    val files = imageUris.toList()
-    if (files.isNotEmpty()) {
-        val fileApi = FileApiImpl()
-        val multipartFiles = ArrayList<MultipartBody.Part>()
-        val cR = context.contentResolver
-        for (item in files) {
-            multipartFiles.add(
-                MultipartBody.Part.createFormData(
-                    "attachment",
-                    getFileName(cR, item),
-                    InputStreamRequestBody(
-                        cR.getType(item)!!.toMediaType(),
-                        context.contentResolver,
-                        item
-                    )
-                )
-            )
-        }
-        val uploadedImageIds = ArrayList<Int>()
-        for (item in multipartFiles) {
-            val response = fileApi.upload(User.getCredentials(), item)
-            response.enqueue(object : Callback<FileDTO> {
-                override fun onResponse(call: Call<FileDTO>, response: Response<FileDTO>) {
-                    if (response.isSuccessful) {
-                        uploadedImageIds.add(response.body()!!.id)
-                        if (uploadedImageIds.size == files.size) {
-                            sendPost(context, text, uploadedImageIds, inputEnabled, navController)
-                        }
-                    } else {
-                        val jsonObj = if (response.errorBody() != null) {
-                            response.errorBody()!!.byteString().utf8()
-                        } else {
-                            response.code().toString()
-                        }
-
-                        Log.d(
-                            "server",
-                            response.code().toString()
-                        )
-                        Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
-                            .show()
-                        inputEnabled.value = true
-                    }
-                }
-
-                override fun onFailure(call: Call<FileDTO>, t: Throwable) {
-                    Log.d("server", t.message.toString())
-                    Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-                    inputEnabled.value = true
-                }
-            })
-        }
-    } else {
-        sendPost(context, text, ArrayList(), inputEnabled, navController)
-    }
-}
-
-private fun sendPost(
-    context: Context,
-    text: MutableState<String>,
-    uploadedImageIds: MutableList<Int>,
-    inputEnabled: MutableState<Boolean>,
-    navController: NavController
-) {
-    val postApi = PostApiImpl()
-
-    val response = postApi.createPost(
-        RequestPostDTO(
-            text = text.value,
-            date = Date().time,
-            attachments = uploadedImageIds
-        ),
-        User.getCredentials()
-    )
-    response.enqueue(object : Callback<ResponsePostDTO>{
-        override fun onResponse(call: Call<ResponsePostDTO>, response: Response<ResponsePostDTO>) {
-            if (response.isSuccessful) {
-                navController.navigate("profile/"+ User.USER_ID!!)
-            } else {
-                val jsonObj = if (response.errorBody() != null) {
-                    response.errorBody()!!.byteString().utf8()
-                } else {
-                    response.code().toString()
-                }
-
-                Log.d(
-                    "server",
-                    response.code().toString()
-                )
-                Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
-                    .show()
-                inputEnabled.value = true
-            }
-        }
-
-        override fun onFailure(call: Call<ResponsePostDTO>, t: Throwable) {
-            Log.d("server", t.message.toString())
-            Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-            inputEnabled.value = true
-        }
-
-    })
-
-}
 
 @Preview(showBackground = true)
 @Composable
 fun CreatePostScreenPreview() {
-    CreatePostScreen(NavController(LocalContext.current))
+    CreatePostScreen(mode = PostMode.CREATE, navController = rememberNavController())
 }

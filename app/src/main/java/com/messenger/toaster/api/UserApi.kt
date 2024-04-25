@@ -114,4 +114,7 @@ interface UserApi {
         @Query("page") page: Int,
         @Header("Authorization") h1: String
     ): Call<List<ResponsePostDTO>>
+
+    @PUT("user/logout")
+    fun logout(@Header("Authorization") h1: String): Call<Unit>
 }

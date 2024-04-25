@@ -17,52 +17,52 @@ class UserApiImpl:UserApi {
         return userApi.registration(token, userDTO)
     }
 
-    override fun auth(token:String): Call<Int> {
-        return userApi.auth(token)
+    override fun auth(h1:String): Call<Int> {
+        return userApi.auth(h1)
     }
 
-    override fun getFriends(token:String): Call<List<FriendDTO>> {
-        return userApi.getFriends(token)
+    override fun getFriends(h1:String): Call<List<FriendDTO>> {
+        return userApi.getFriends(h1)
     }
 
-    override fun sendFriendRequest(receiver: Int, token:String): Call<FriendDTO> {
-        return userApi.sendFriendRequest(receiver, token)
+    override fun sendFriendRequest(receiver: Int, h1:String): Call<FriendDTO> {
+        return userApi.sendFriendRequest(receiver, h1)
     }
 
-    override fun getPending(token:String): Call<List<FriendDTO>> {
-        return userApi.getPending(token)
+    override fun getPending(h1:String): Call<List<FriendDTO>> {
+        return userApi.getPending(h1)
     }
 
-    override fun getSent(token:String): Call<List<FriendDTO>> {
-        return userApi.getSent(token)
+    override fun getSent(h1:String): Call<List<FriendDTO>> {
+        return userApi.getSent(h1)
     }
 
-    override fun acceptFriendRequest(sender: Int,token:String): Call<FriendDTO> {
-        return userApi.acceptFriendRequest(sender, token)
+    override fun acceptFriendRequest(sender: Int, h1:String): Call<FriendDTO> {
+        return userApi.acceptFriendRequest(sender, h1)
     }
 
-    override fun updatePicture(file:Int, token:String): Call<Unit> {
-        return userApi.updatePicture(file, token)
+    override fun updatePicture(file:Int, h1:String): Call<Unit> {
+        return userApi.updatePicture(file, h1)
     }
 
-    override fun updateNickname(nickname: String, token:String): Call<Unit> {
-        return userApi.updateNickname(nickname, token)
+    override fun updateNickname(nickname: String, h1:String): Call<Unit> {
+        return userApi.updateNickname(nickname, h1)
     }
 
-    override fun getSettings(token:String): Call<UserSettingsDTO> {
-        return userApi.getSettings(token)
+    override fun getSettings(h1:String): Call<UserSettingsDTO> {
+        return userApi.getSettings(h1)
     }
 
-    override fun updateToken(firebase: String, token: String ): Call<Unit> {
-        return userApi.updateToken(firebase, token)
+    override fun updateToken(token: String, h1: String ): Call<Unit> {
+        return userApi.updateToken(token, h1)
     }
 
-    override fun getUser(token:String): Call<UserProfileDTO> {
-        return userApi.getUser(token)
+    override fun getUser(h1:String): Call<UserProfileDTO> {
+        return userApi.getUser(h1)
     }
 
-    override fun getFeed(token:String, page:Int): Call<List<ResponsePostDTO>> {
-        return userApi.getFeed(token, page)
+    override fun getFeed(h1:String, page:Int): Call<List<ResponsePostDTO>> {
+        return userApi.getFeed(h1, page)
     }
 
     override fun getFeed(query: String, page: Int, h1: String): Call<List<ResponsePostDTO>> {
@@ -104,5 +104,9 @@ class UserApiImpl:UserApi {
 
     override fun getFriendFeed(query: String, page: Int, h1: String): Call<List<ResponsePostDTO>> {
         return userApi.getFriendFeed(query, page, h1)
+    }
+
+    override fun logout(h1: String): Call<Unit> {
+        return userApi.logout(h1)
     }
 }

@@ -7,15 +7,16 @@ import android.widget.Toast
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.messenger.toaster.api.impl.FileApiImpl
-import com.messenger.toaster.api.impl.MessageApiImpl
+import com.messenger.toaster.api.impl.PostApiImpl
 import com.messenger.toaster.converter.getFileName
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.FriendDTO
-import com.messenger.toaster.dto.RequestEditMessageDTO
-import com.messenger.toaster.dto.RequestMessageDTO
-import com.messenger.toaster.dto.ResponseMessageDTO
+import com.messenger.toaster.dto.RequestEditPostDTO
+import com.messenger.toaster.dto.RequestPostDTO
+import com.messenger.toaster.dto.ResponsePostDTO
 import com.messenger.toaster.requestbody.InputStreamRequestBody
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -26,12 +27,27 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.util.Date
 
-class MessagesViewModel : ViewModel() {
+class PostViewModel : ViewModel() {
     private val _images = MutableStateFlow<List<FileDTO>>(emptyList())
     val images = _images
 
-    private val _isLoaded = MutableStateFlow(false)
+    private val _isLoaded = MutableStateFlow(true)
     val isLoaded = _isLoaded
+
+    private val _post = MutableStateFlow(
+        ResponsePostDTO(
+            0,
+            null,
+            FriendDTO(0, null, null),
+            13233124,
+            ArrayList(),
+            0,
+            false,
+            0,
+            null
+        )
+    )
+    val post = _post
 
     private fun addImage(image: FileDTO) {
         val currentList = _images.value.toMutableList()
@@ -116,127 +132,145 @@ class MessagesViewModel : ViewModel() {
         }
     }
 
-    fun editMessage(
+    fun sendPost(
         context: Context,
-        id: Int,
-        index: Int,
-        message: MutableState<String>,
-        messages: MutableList<ResponseMessageDTO>,
+        text: MutableState<String>,
         uploadedImageIds: List<Int>,
         inputEnabled: MutableState<Boolean>,
-        onEnd: () -> Unit
+        navController: NavController
     ) {
-        val messageApi = MessageApiImpl()
-        val response = messageApi.editMessage(
-            id,
-            RequestEditMessageDTO(message.value, uploadedImageIds),
+        val postApi = PostApiImpl()
+        val response = postApi.createPost(
+            RequestPostDTO(
+                text = text.value,
+                date = Date().time,
+                attachments = uploadedImageIds
+            ),
             User.getCredentials()
         )
-        response.enqueue(object : Callback<ResponseMessageDTO> {
+        response.enqueue(object : Callback<ResponsePostDTO> {
             override fun onResponse(
-                call: Call<ResponseMessageDTO>,
-                response: Response<ResponseMessageDTO>
+                call: Call<ResponsePostDTO>,
+                response: Response<ResponsePostDTO>
             ) {
                 if (response.isSuccessful) {
-                    messages[index] = response.body()!!
-                    message.value = ""
-                    onEnd()
+                    navController.navigate("profile/" + User.USER_ID!!)
                 } else {
-                    val jsonObj =
-                        if (response.errorBody() != null) response.errorBody()!!.byteString()
-                            .utf8() else response.code().toString()
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
                         "server",
                         response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                        .show()
+                    inputEnabled.value = true
                 }
-                inputEnabled.value = true
             }
 
-            override fun onFailure(call: Call<ResponseMessageDTO>, t: Throwable) {
+            override fun onFailure(call: Call<ResponsePostDTO>, t: Throwable) {
                 Log.d("server", t.message.toString())
                 Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
                 inputEnabled.value = true
             }
+
         })
+
     }
 
-    fun sendMessage(
-        context: Context,
-        message: MutableState<String>,
-        friendDTO: FriendDTO,
-        messages: MutableList<ResponseMessageDTO>,
-        uploadedImageIds: List<Int>,
-        inputEnabled: MutableState<Boolean>,
-        onEnd: () -> Unit
-    ) {
-        val messageApi = MessageApiImpl()
-        val requestMessage = RequestMessageDTO(
-            message.value,
-            friendDTO.id,
-            Date().time,
-            uploadedImageIds
-        )
-        val response = messageApi.send(requestMessage, User.getCredentials())
-        response.enqueue(object : Callback<ResponseMessageDTO> {
+    fun getPost(id: String, context: Context, text: MutableState<String>, onReturn: () -> Unit) {
+        val postApi = PostApiImpl()
+        val response = postApi.getPost(id.toInt(), User.getCredentials())
+        response.enqueue(object : Callback<ResponsePostDTO> {
             override fun onResponse(
-                call: Call<ResponseMessageDTO>,
-                response: Response<ResponseMessageDTO>
+                call: Call<ResponsePostDTO>,
+                response: Response<ResponsePostDTO>
             ) {
                 if (response.isSuccessful) {
-                    messages.add(0, response.body()!!)
-                    message.value = ""
-                    onEnd()
+                    _post.value = response.body()!!
+                    text.value =
+                        if (response.body()!!.text != null) response.body()!!.text!! else ""
+                    set(response.body()!!.attachments)
                 } else {
-                    val jsonObj =
-                        if (response.errorBody() != null) response.errorBody()!!.byteString()
-                            .utf8() else response.code().toString()
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
                         "server",
                         response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                        .show()
+                    onReturn()
                 }
-                inputEnabled.value = true
+
             }
 
-            override fun onFailure(call: Call<ResponseMessageDTO>, t: Throwable) {
+            override fun onFailure(call: Call<ResponsePostDTO>, t: Throwable) {
                 Log.d("server", t.message.toString())
                 Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-                inputEnabled.value = true
+                onReturn()
             }
         })
-
     }
 
-    fun deleteMessage(
-        context: Context,
+    fun updatePost(
         id: Int,
-        onEnd: () -> Unit
+        index:Int,
+        post: RequestEditPostDTO,
+        context: Context,
+        inputEnabled: MutableState<Boolean>,
+        allNewsViewModel: AllNewsViewModel? = null,
+        profilePostViewModel: ProfilePostViewModel? = null,
+        onComplete: () -> Unit
     ) {
-        val messageApi = MessageApiImpl()
-        val response = messageApi.deleteMessage(id, User.getCredentials())
-        response.enqueue(object : Callback<Unit> {
-            override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
+        val postApi = PostApiImpl()
+        val response = postApi.updatePost(
+            id,
+            post,
+            User.getCredentials()
+        )
+        response.enqueue(object : Callback<ResponsePostDTO> {
+            override fun onResponse(
+                call: Call<ResponsePostDTO>,
+                response: Response<ResponsePostDTO>
+            ) {
                 if (response.isSuccessful) {
-                    onEnd()
+                    if (allNewsViewModel!=null){
+                        allNewsViewModel.update(index, response.body()!!)
+                    }
+                    else profilePostViewModel?.update(index, response.body()!!)
+                    onComplete()
                 } else {
-                    val jsonObj =
-                        if (response.errorBody() != null) response.errorBody()!!.byteString()
-                            .utf8() else response.code().toString()
+                    val jsonObj = if (response.errorBody() != null) {
+                        response.errorBody()!!.byteString().utf8()
+                    } else {
+                        response.code().toString()
+                    }
+
                     Log.d(
                         "server",
                         response.code().toString()
                     )
-                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
+                        .show()
+                    inputEnabled.value = true
                 }
             }
 
-            override fun onFailure(call: Call<Unit>, t: Throwable) {
+            override fun onFailure(call: Call<ResponsePostDTO>, t: Throwable) {
                 Log.d("server", t.message.toString())
                 Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+                inputEnabled.value = true
             }
+
         })
     }
 }
