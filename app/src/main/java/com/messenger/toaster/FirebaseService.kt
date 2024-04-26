@@ -130,7 +130,6 @@ class FirebaseService : FirebaseMessagingService() {
 
         val notificationId = 0
         notificationManager.notify(notificationId, notificationBuilder.build())
-        User.messages?.add(0, message)
     }
 
     companion object {

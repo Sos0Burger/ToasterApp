@@ -5,17 +5,21 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.messenger.toaster.api.impl.FileApiImpl
 import com.messenger.toaster.api.impl.MessageApiImpl
 import com.messenger.toaster.converter.getFileName
+import com.messenger.toaster.data.ActionEnum
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FileDTO
 import com.messenger.toaster.dto.FriendDTO
 import com.messenger.toaster.dto.RequestEditMessageDTO
 import com.messenger.toaster.dto.RequestMessageDTO
 import com.messenger.toaster.dto.ResponseMessageDTO
+import com.messenger.toaster.dto.ResponseWebsocketMessageDTO
+import com.messenger.toaster.repository.WebSocketRepository
 import com.messenger.toaster.requestbody.InputStreamRequestBody
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -27,11 +31,26 @@ import retrofit2.Response
 import java.util.Date
 
 class MessagesViewModel : ViewModel() {
+    private val webSocketRepository: WebSocketRepository = WebSocketRepository()
+
+    init {
+        viewModelScope.launch {
+            webSocketRepository.connectWebSocket(this@MessagesViewModel)
+        }
+    }
+
     private val _images = MutableStateFlow<List<FileDTO>>(emptyList())
     val images = _images
 
     private val _isLoaded = MutableStateFlow(false)
     val isLoaded = _isLoaded
+
+    private val _messages =
+        MutableStateFlow<SnapshotStateList<ResponseMessageDTO>>(SnapshotStateList())
+    val messages = _messages
+
+    private val _page = MutableStateFlow(-1)
+    val page = _page
 
     private fun addImage(image: FileDTO) {
         val currentList = _images.value.toMutableList()
@@ -39,21 +58,99 @@ class MessagesViewModel : ViewModel() {
         _images.value = currentList
     }
 
+    fun addMessage(message: ResponseMessageDTO) {
+        _messages.value.add(0, message)
+    }
+
+    fun updateMessage(message: ResponseMessageDTO) {
+        _messages.value.forEach(action = {
+            if (it.id == message.id){
+                _messages.value[_messages.value.indexOf(it)] = message
+                return
+            }
+        })
+
+
+    }
+
+    fun removeMessage(message: ResponseMessageDTO) {
+        _messages.value.forEach(action = {
+            if (it.id == message.id){
+                _messages.value.remove(it)
+                return
+            }
+        })
+    }
+
     fun clearImages() {
         _images.value = emptyList()
     }
 
-    fun remove(index: Int) {
+    fun removeImage(index: Int) {
         val currentList = _images.value.toMutableList()
         currentList.removeAt(index)
         _images.value = currentList
     }
 
-    fun set(images: List<FileDTO>) {
+    fun setImages(images: List<FileDTO>) {
         val currentList = images
         _images.value = currentList
     }
 
+    fun sendMessageToWebsocket(messages: List<ResponseWebsocketMessageDTO>, onEnd: () -> Unit) {
+        viewModelScope.launch {
+            webSocketRepository.sendMessage(messages, onEnd)
+        }
+    }
+
+    fun refresh(id:Int, context: Context){
+        _messages.value = SnapshotStateList()
+        _page.value = 0
+        loadMessages(id, context)
+    }
+    fun loadNextPage(id:Int, context: Context){
+        _page.value++
+        loadMessages(id, context)
+    }
+    private fun loadMessages(id:Int, context: Context) {
+        viewModelScope.launch {
+            val messageApi = MessageApiImpl()
+            val response = messageApi.getDialog(id, page.value, User.getCredentials())
+            response.enqueue(object : Callback<List<ResponseMessageDTO>> {
+                override fun onResponse(
+                    call: Call<List<ResponseMessageDTO>>,
+                    response: Response<List<ResponseMessageDTO>>
+                ) {
+                    if (response.isSuccessful) {
+                        _messages.value.addAll(response.body()!!)
+                        val read = mutableListOf<ResponseWebsocketMessageDTO>()
+                        response.body()!!.forEach(action = {
+                            if(!it.read && it.receiver.id==User.USER_ID){
+                                read.add(it.toWebsocketMessage(ActionEnum.UPDATE))
+                            }
+                        })
+                        if (read.isNotEmpty()){
+                            sendMessageToWebsocket(read){}
+                        }
+
+                    } else {
+                        val jsonObj =
+                            if (response.errorBody() != null) response.errorBody()!!.byteString()
+                                .utf8() else response.code().toString()
+                        Log.d(
+                            "server",
+                            response.code().toString()
+                        )
+                        Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
+                    }
+                }
+                override fun onFailure(call: Call<List<ResponseMessageDTO>>, t: Throwable) {
+                    Log.d("server", t.message.toString())
+                    Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+    }
     fun upload(images: List<Uri>, context: Context) {
         viewModelScope.launch {
             _isLoaded.emit(false)
@@ -119,9 +216,7 @@ class MessagesViewModel : ViewModel() {
     fun editMessage(
         context: Context,
         id: Int,
-        index: Int,
         message: MutableState<String>,
-        messages: MutableList<ResponseMessageDTO>,
         uploadedImageIds: List<Int>,
         inputEnabled: MutableState<Boolean>,
         onEnd: () -> Unit
@@ -138,9 +233,14 @@ class MessagesViewModel : ViewModel() {
                 response: Response<ResponseMessageDTO>
             ) {
                 if (response.isSuccessful) {
-                    messages[index] = response.body()!!
+                    sendMessageToWebsocket(
+                        listOf(
+                            response.body()!!.toWebsocketMessage(ActionEnum.UPDATE)
+                        )
+                    ) {
+                        onEnd()
+                    }
                     message.value = ""
-                    onEnd()
                 } else {
                     val jsonObj =
                         if (response.errorBody() != null) response.errorBody()!!.byteString()
@@ -166,7 +266,6 @@ class MessagesViewModel : ViewModel() {
         context: Context,
         message: MutableState<String>,
         friendDTO: FriendDTO,
-        messages: MutableList<ResponseMessageDTO>,
         uploadedImageIds: List<Int>,
         inputEnabled: MutableState<Boolean>,
         onEnd: () -> Unit
@@ -185,9 +284,14 @@ class MessagesViewModel : ViewModel() {
                 response: Response<ResponseMessageDTO>
             ) {
                 if (response.isSuccessful) {
-                    messages.add(0, response.body()!!)
                     message.value = ""
-                    onEnd()
+                    sendMessageToWebsocket(
+                        listOf(
+                            response.body()!!.toWebsocketMessage(ActionEnum.CREATE)
+                        )
+                    ) {
+                        onEnd()
+                    }
                 } else {
                     val jsonObj =
                         if (response.errorBody() != null) response.errorBody()!!.byteString()
@@ -212,15 +316,17 @@ class MessagesViewModel : ViewModel() {
 
     fun deleteMessage(
         context: Context,
-        id: Int,
+        message: ResponseMessageDTO,
         onEnd: () -> Unit
     ) {
         val messageApi = MessageApiImpl()
-        val response = messageApi.deleteMessage(id, User.getCredentials())
+        val response = messageApi.deleteMessage(message.id, User.getCredentials())
         response.enqueue(object : Callback<Unit> {
             override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
                 if (response.isSuccessful) {
-                    onEnd()
+                    sendMessageToWebsocket(listOf(message.toWebsocketMessage(ActionEnum.DELETE))) {
+                        onEnd()
+                    }
                 } else {
                     val jsonObj =
                         if (response.errorBody() != null) response.errorBody()!!.byteString()

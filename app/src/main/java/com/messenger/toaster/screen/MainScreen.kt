@@ -82,7 +82,7 @@ fun MainScreen() {
     val iconTextModifier = Modifier.size(32.dp, 32.dp)
     val navController = rememberNavController()
     val newsViewModel: AllNewsViewModel = viewModel()
-    val profilePostViewModel: ProfilePostViewModel = viewModel()
+    var profilePostViewModel: ProfilePostViewModel = viewModel()
     val fullPostViewModel: FullPostViewModel = viewModel()
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         NavHost(
@@ -112,6 +112,7 @@ fun MainScreen() {
                 Friends(navController)
             }
             composable("profile/{userId}") { backStackEntry ->
+                profilePostViewModel = viewModel()
                 Profile(
                     backStackEntry.arguments?.getString("userId")!!,
                     navController,

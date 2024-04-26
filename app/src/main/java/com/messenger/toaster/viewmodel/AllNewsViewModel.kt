@@ -35,7 +35,6 @@ class AllNewsViewModel:ViewModel() {
     }
     fun remove(index: Int){
            _posts.value.removeAt(index)
-            print("sex")
     }
     fun loadNextPage(query:String, context: Context) {
         _currentPage.value++

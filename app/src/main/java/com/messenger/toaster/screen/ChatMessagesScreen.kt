@@ -10,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,7 +59,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,9 +86,9 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.messenger.toaster.R
 import com.messenger.toaster.api.RetrofitClient
-import com.messenger.toaster.api.impl.MessageApiImpl
 import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.converter.TimeConverter
+import com.messenger.toaster.converter.monthsBetweenUnixTimes
 import com.messenger.toaster.data.FriendStatus
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.FriendDTO
@@ -113,10 +113,7 @@ fun ChatMessagesScreen(
     onProfile: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val messages: MutableList<ResponseMessageDTO> = remember {
-        mutableStateListOf()
-    }
-    User.messages = messages
+    val messages by messagesViewModel.messages.collectAsState()
     val images by messagesViewModel.images.collectAsState()
     val isLoaded by messagesViewModel.isLoaded.collectAsState()
 
@@ -143,9 +140,7 @@ fun ChatMessagesScreen(
     val message = remember {
         mutableStateOf("")
     }
-    val messagePage = remember {
-        mutableStateOf(0)
-    }
+    val messagePage by messagesViewModel.page.collectAsState()
     val isProfileLoading = remember {
         mutableStateOf(true)
     }
@@ -167,42 +162,15 @@ fun ChatMessagesScreen(
     val messageScrollState = rememberLazyListState()
     val endReached by remember {
         derivedStateOf {
-            !messageScrollState.canScrollForward && (messages.size >= messagePage.value * 15)
+            (
+                    messageScrollState.firstVisibleItemIndex == messages.size - 15 ||
+                            !messageScrollState.canScrollForward
+                    ) && (messages.size >= messagePage * 30)
         }
     }
+
     val inputEnabled = remember {
         mutableStateOf(true)
-    }
-
-    fun getMessages(page: Int) {
-        val messageApi = MessageApiImpl()
-
-        val response = messageApi.getDialog(id.toInt(), page, User.getCredentials())
-        response.enqueue(object : Callback<List<ResponseMessageDTO>> {
-            override fun onResponse(
-                call: Call<List<ResponseMessageDTO>>,
-                response: Response<List<ResponseMessageDTO>>
-            ) {
-                if (response.isSuccessful) {
-                    messages.addAll(response.body()!!)
-                    messagePage.value += 1
-                } else {
-                    val jsonObj =
-                        if (response.errorBody() != null) response.errorBody()!!.byteString()
-                            .utf8() else response.code().toString()
-                    Log.d(
-                        "server",
-                        response.code().toString()
-                    )
-                    Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onFailure(call: Call<List<ResponseMessageDTO>>, t: Throwable) {
-                Log.d("server", t.message.toString())
-                Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
-            }
-        })
     }
 
     fun getProfile() {
@@ -325,8 +293,7 @@ fun ChatMessagesScreen(
                 }
                 IconButton(onClick = {
                     getProfile()
-                    messages.clear()
-                    messagePage.value = 0
+                    messagesViewModel.refresh(id.toInt(), context)
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.update),
@@ -480,17 +447,30 @@ fun ChatMessagesScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = TimeConverter.longToLocalTime(messages[index].date),
+                                        text = if (monthsBetweenUnixTimes(
+                                                messages[index].date,
+                                                System.currentTimeMillis()
+                                            ) < 1
+                                        ) DateUtils.getRelativeTimeSpanString(
+                                            messages[index].date,
+                                            System.currentTimeMillis(),
+                                            DateUtils.MINUTE_IN_MILLIS
+                                        ).toString()
+                                        else
+                                            TimeConverter.longToLocalTime(messages[index].date),
                                         textAlign = TextAlign.End,
-                                        fontSize = 10.sp,
+                                        fontSize = 12.sp,
                                         modifier = Modifier.padding(all = 4.dp),
                                         color = Color.White
                                     )
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.check_icon),
-                                        contentDescription = null,
-                                        tint = if (messages[index].read) Orange else Color.Black
-                                    )
+                                    if (messages[index].sender.id == User.USER_ID) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.check_icon),
+                                            contentDescription = null,
+                                            tint = if (messages[index].read) Orange else Color.Black
+                                        )
+                                    }
+
                                 }
                                 DropdownMenu(
                                     expanded = isDropDown.value,
@@ -500,7 +480,7 @@ fun ChatMessagesScreen(
                                         onClick = {
                                             editMessage = mutableStateOf(messages[index])
                                             message.value = messages[index].text.toString()
-                                            messagesViewModel.set(messages[index].attachments)
+                                            messagesViewModel.setImages(messages[index].attachments)
                                             isEdit.value = true
                                             isDropDown.value = false
                                         })
@@ -518,9 +498,8 @@ fun ChatMessagesScreen(
                                             Button(onClick = {
                                                 messagesViewModel.deleteMessage(
                                                     context,
-                                                    messages[index].id
+                                                    messages[index]
                                                 ) {
-                                                    messages.removeAt(index)
                                                     isDialog.value = false
                                                 }
                                             }, colors = buttonColor) {
@@ -562,7 +541,7 @@ fun ChatMessagesScreen(
                 items(imageCount.value) { index ->
                     Button(
                         onClick = {
-                            messagesViewModel.remove(index)
+                            messagesViewModel.removeImage(index)
                         },
                         enabled = inputEnabled.value,
                         contentPadding = PaddingValues(0.dp),
@@ -623,7 +602,21 @@ fun ChatMessagesScreen(
                     modifier = Modifier
                         .verticalScroll(scrollState)
                         .heightIn(min = 48.dp, max = 96.dp)
-                        .widthIn(max = 256.dp)
+                        .widthIn(max = 256.dp),
+                    trailingIcon = {
+                        if (isEdit.value) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.cancel_icon),
+                                contentDescription = null,
+                                tint = Orange,
+                                modifier = Modifier.clickable {
+                                    isEdit.value = false
+                                    message.value = ""
+                                    messagesViewModel.clearImages()
+                                }
+                            )
+                        }
+                    }
                 )
                 IconButton(
                     onClick = {
@@ -633,11 +626,7 @@ fun ChatMessagesScreen(
                                 messagesViewModel.editMessage(
                                     context,
                                     editMessage!!.value.id,
-                                    messages.indexOf(
-                                        editMessage!!.value
-                                    ),
                                     message,
-                                    messages,
                                     images.map { it.id }.toList(),
                                     inputEnabled
                                 ) {
@@ -657,7 +646,6 @@ fun ChatMessagesScreen(
                                     profile.value.nickname,
                                     profile.value.image
                                 ),
-                                messages,
                                 images.map { it.id }.toList(),
                                 inputEnabled
                             ) {
@@ -694,7 +682,7 @@ fun ChatMessagesScreen(
 
     if (endReached) {
         LaunchedEffect(Unit) {
-            getMessages(messagePage.value)
+            messagesViewModel.loadNextPage(id.toInt(), context)
         }
     }
 
