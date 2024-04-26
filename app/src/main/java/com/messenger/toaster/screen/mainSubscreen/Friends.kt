@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -216,11 +217,6 @@ fun Friends(navController: NavController) {
             })
         }
     }
-
-    if (pageState.currentPage <= 2) {
-        getFriends()
-    }
-
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -388,6 +384,9 @@ fun FriendList(
 ) {
     val viewModel: UpdateViewModel = viewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    LaunchedEffect(Unit){
+        getFriends()
+    }
     Surface(
         modifier = Modifier
             .fillMaxSize()

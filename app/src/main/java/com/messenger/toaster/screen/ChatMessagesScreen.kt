@@ -685,7 +685,6 @@ fun ChatMessagesScreen(
             messagesViewModel.loadNextPage(id.toInt(), context)
         }
     }
-
 }
 
 @Preview(showBackground = true)

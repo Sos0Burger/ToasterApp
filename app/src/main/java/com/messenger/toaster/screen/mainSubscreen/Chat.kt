@@ -16,6 +16,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -73,7 +74,7 @@ fun Chat(navController: NavController) {
         mutableStateOf(true)
     }
     fun getChats() {
-        isChatLoading.value = false
+        isChatLoading.value = true
         chatList.clear()
         val userApi = UserApiImpl()
         val response = userApi.getUserChats(User.getCredentials())
@@ -99,20 +100,21 @@ fun Chat(navController: NavController) {
                     errorMessage.value = jsonObj
                     snackBarState.value = true
                 }
+                isChatLoading.value = false
             }
 
             override fun onFailure(call: Call<List<ResponseChatDTO>>, t: Throwable) {
                 Log.d("server", t.message.toString())
                 errorMessage.value = "Ошибка подключения"
                 snackBarState.value = true
+                isChatLoading.value = false
             }
         })
     }
 
     val viewModel: UpdateViewModel = viewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    if (isChatLoading.value){
-        isChatLoading.value = false
+    LaunchedEffect(Unit){
         viewModel.refresh { getChats() }
     }
     Surface(
@@ -143,7 +145,8 @@ fun Chat(navController: NavController) {
             if (isChatListEmpty.value) {
                 Column(
                     verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "У вас нет чатов", color = Orange, fontSize = 20.sp)
                 }
