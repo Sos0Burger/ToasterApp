@@ -11,6 +11,7 @@ import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.ResponsePostDTO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -20,8 +21,16 @@ class ProfilePostViewModel: ViewModel() {
     private val _posts = MutableStateFlow<SnapshotStateList<ResponsePostDTO>>(SnapshotStateList())
     val posts = _posts
 
-    private val _currentPage = MutableStateFlow(-1)
+    private val _currentPage = MutableStateFlow(0)
     val currentPage: StateFlow<Int> = _currentPage
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading
+
+    private val _isRefreshing = MutableStateFlow(false)
+
+    val isRefreshing: StateFlow<Boolean>
+        get() = _isRefreshing.asStateFlow()
 
     fun update(index: Int, post:ResponsePostDTO){
         _posts.value[index] = post
@@ -30,16 +39,19 @@ class ProfilePostViewModel: ViewModel() {
         _posts.value.removeAt(index)
     }
     fun loadNextPage(id:Int, query:String, context:Context) {
-        _currentPage.value++
         loadPosts(id, query, context)
     }
     fun refresh(id:Int, query:String, context:Context){
-        _posts.value = SnapshotStateList()
-        _currentPage.value = -1
-        loadNextPage(id, query, context)
+        viewModelScope.launch {
+            _isRefreshing.emit(true)
+            _posts.value = SnapshotStateList()
+            _currentPage.value = 0
+            loadNextPage(id, query, context)
+        }
     }
     private fun loadPosts(id:Int, query:String, context: Context) {
         viewModelScope.launch {
+            _isLoading.emit(true)
             val response = UserApiImpl().getUserPosts(id, query, currentPage.value, User.getCredentials())
             response.enqueue(object:Callback<List<ResponsePostDTO>>{
                 override fun onResponse(
@@ -48,9 +60,9 @@ class ProfilePostViewModel: ViewModel() {
                 ) {
                     if (response.isSuccessful){
                         _posts.value += response.body()!!
+                        _currentPage.value++
                     }
                     else{
-                        _currentPage.value--
                         val jsonObj = if (response.errorBody() != null) {
                             response.errorBody()!!.byteString().utf8()
                         } else {
@@ -64,11 +76,19 @@ class ProfilePostViewModel: ViewModel() {
                         Toast.makeText(context, jsonObj, Toast.LENGTH_SHORT)
                             .show()
                     }
+                    viewModelScope.launch {
+                        _isLoading.emit(false)
+                        _isRefreshing.emit(false)
+                    }
+
                 }
 
                 override fun onFailure(call: Call<List<ResponsePostDTO>>, t: Throwable) {
                     Log.d("server", t.message.toString())
                     Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
+                    viewModelScope.launch {
+                        _isRefreshing.emit(false)
+                    }
                 }
             })
 

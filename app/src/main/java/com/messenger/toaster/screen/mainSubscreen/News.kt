@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -72,23 +73,17 @@ fun News(
     val search = remember {
         mutableStateOf("")
     }
-
-    friendNewsViewModel.apply {
-        friendNewsViewModel.loadNextPage("", context)
-    }
-    allNewsViewModel.apply {
-        allNewsViewModel.loadNextPage(search.value, context)
-    }
-
     val friendPosts by friendNewsViewModel.posts.collectAsState()
     val friendCurrentPage by friendNewsViewModel.currentPage.collectAsState()
     val isFriendRefreshing by friendNewsViewModel.isRefreshing.collectAsState()
-    val friendListState = rememberLazyListState()
+    val isFriendLoading by friendNewsViewModel.isLoading.collectAsState()
+    val friendsPostState = rememberLazyListState()
 
     val allPosts by allNewsViewModel.posts.collectAsState()
     val allCurrentPage by allNewsViewModel.currentPage.collectAsState()
     val isAllRefreshing by allNewsViewModel.isRefreshing.collectAsState()
-    val allListState = rememberLazyListState()
+    val isAllLoading by allNewsViewModel.isLoading.collectAsState()
+    val allPostState = rememberLazyListState()
 
 
     val friendsPostCount = remember {
@@ -102,20 +97,18 @@ fun News(
         2
     }
 
-    val postScrollState = rememberLazyListState()
-    val allScrollState = rememberLazyListState()
     val endReachedFriends by remember {
         derivedStateOf {
-            !postScrollState.canScrollForward &&
-                    (friendPosts.size >= friendsPostCount.value * 15) &&
-                    (friendPosts.isNotEmpty() || friendCurrentPage == 0)
+            !friendsPostState.canScrollForward &&
+                    !isFriendLoading &&
+                    (friendPosts.size >= friendCurrentPage * 15)
         }
     }
     val endReachedAll by remember {
         derivedStateOf {
-            !allScrollState.canScrollForward &&
-                    (allPosts.size >= allPostCount.value * 15) &&
-                    (allPosts.isNotEmpty() || allCurrentPage == 0)
+            !allPostState.canScrollForward &&
+                    !isAllLoading &&
+                    (allPosts.size >= allCurrentPage * 15)
         }
     }
 
@@ -184,7 +177,7 @@ fun News(
                             }
                         ) {
                             LazyColumn(
-                                state = friendListState,
+                                state = friendsPostState,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(horizontal = 8.dp),
@@ -239,7 +232,7 @@ fun News(
                             }
                         ) {
                             LazyColumn(
-                                state = allListState,
+                                state = allPostState,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(horizontal = 8.dp),
@@ -298,9 +291,8 @@ fun News(
                                     }
                                 }
                                 if (endReachedAll && !isAllRefreshing) {
-                                    friendNewsViewModel.loadNextPage("", context)
+                                    allNewsViewModel.loadNextPage("", context)
                                 }
-
                             }
                         }
                     }

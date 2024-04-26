@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -74,11 +75,6 @@ fun Profile(
 ) {
 
     val context = LocalContext.current
-
-    profilePostViewModel.apply {
-        profilePostViewModel.loadNextPage(id.toInt(), "", context)
-    }
-
     val profile = remember {
         mutableStateOf(
             UserProfileDTO(
@@ -95,6 +91,8 @@ fun Profile(
 
     val posts by profilePostViewModel.posts.collectAsState()
     val currentPage by profilePostViewModel.currentPage.collectAsState()
+    val isLoading by profilePostViewModel.isLoading.collectAsState()
+    val isRefreshing by profilePostViewModel.isRefreshing.collectAsState()
 
     val postCount = remember {
         derivedStateOf { posts.size }
@@ -105,12 +103,9 @@ fun Profile(
     val endReached by remember {
         derivedStateOf {
             !postScrollState.canScrollForward &&
-                    (posts.size >= postCount.value * 15) &&
-                    (posts.isNotEmpty() || currentPage == 0)
+                    (posts.size >= currentPage * 15) &&
+                    !isLoading
         }
-    }
-    val isPostLoading = rememberSaveable {
-        mutableStateOf(false)
     }
     val search = remember {
         mutableStateOf("")
@@ -147,11 +142,9 @@ fun Profile(
         })
 
     }
-
-    if (profile.value.id == -1) {
+    LaunchedEffect(Unit) {
         getProfile()
     }
-
 
     Surface(
         modifier = Modifier
@@ -201,7 +194,7 @@ fun Profile(
                 modifier = Modifier.padding(top = 2.dp, end = 16.dp, start = 16.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            LazyColumn(modifier = Modifier.fillMaxSize(1f)) {
+            LazyColumn(modifier = Modifier.fillMaxSize(1f), state = postScrollState) {
                 item {
                     Row(
                         horizontalArrangement = Arrangement.SpaceAround,
@@ -349,7 +342,7 @@ fun Profile(
                 }
 
                 item {
-                    if (isPostLoading.value)
+                    if (isLoading)
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth(1f)
@@ -364,7 +357,7 @@ fun Profile(
             }
         }
     }
-    if (endReached && !isPostLoading.value && profile.value.id != -1) {
+    if (endReached && !isRefreshing) {
         profilePostViewModel.loadNextPage(id.toInt(), "", context)
     }
 

@@ -24,7 +24,9 @@ class AllNewsViewModel:ViewModel() {
     private val _currentPage = MutableStateFlow(-1)
     val currentPage: StateFlow<Int> = _currentPage
 
-    private val _isRefreshing = MutableStateFlow(true)
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading
+    private val _isRefreshing = MutableStateFlow(false)
 
     val isRefreshing: StateFlow<Boolean>
         get() = _isRefreshing.asStateFlow()
@@ -51,6 +53,7 @@ class AllNewsViewModel:ViewModel() {
     }
     private fun loadPosts(query:String, context: Context) {
         viewModelScope.launch {
+            _isLoading.emit(true)
             val response = UserApiImpl().getFeed(query, currentPage.value, User.getCredentials())
             response.enqueue(object: Callback<List<ResponsePostDTO>> {
                 override fun onResponse(
@@ -77,14 +80,18 @@ class AllNewsViewModel:ViewModel() {
 
                     }
                     viewModelScope.launch {
+                        _isLoading.emit(false)
                         _isRefreshing.emit(false)
                     }
                 }
 
                 override fun onFailure(call: Call<List<ResponsePostDTO>>, t: Throwable) {
                     Log.d("server", t.message.toString())
+
                     Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_SHORT).show()
                     viewModelScope.launch {
+                        _currentPage.value--
+                        _isLoading.emit(false)
                         _isRefreshing.emit(false)
                     }
 
