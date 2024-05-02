@@ -110,7 +110,7 @@ fun Settings(back:()->Unit) {
                     userResponse.enqueue(object : Callback<Unit> {
                         override fun onResponse(call: Call<Unit>, userResponse: Response<Unit>) {
                             if (userResponse.code() == 200) {
-                                userSettings.value.image!!.id = fileResponse.body()!!.id
+                                userSettings.value.image = fileResponse.body()!!
                                 imageUri.value = Uri.EMPTY
                             } else {
                                 val jsonObj = if (userResponse.errorBody() != null) {

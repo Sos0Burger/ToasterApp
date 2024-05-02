@@ -126,6 +126,7 @@ class MessagesViewModel : ViewModel() {
                         val read = mutableListOf<ResponseWebsocketMessageDTO>()
                         response.body()!!.forEach(action = {
                             if(!it.read && it.receiver.id==User.USER_ID){
+                                it.read = true
                                 read.add(it.toWebsocketMessage(ActionEnum.UPDATE))
                             }
                         })

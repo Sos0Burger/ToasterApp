@@ -9,7 +9,7 @@ class ResponseMessageDTO(
     val receiver: FriendDTO,
     val date: Long,
     val attachments: List<FileDTO>,
-    val read: Boolean
+    var read: Boolean
 ){
     fun toWebsocketMessage(actionEnum: ActionEnum):ResponseWebsocketMessageDTO{
         return ResponseWebsocketMessageDTO(id, text, sender, receiver, date, attachments, read, actionEnum)
