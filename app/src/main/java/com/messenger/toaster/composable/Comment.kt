@@ -71,7 +71,8 @@ import java.util.Date
 fun Comment(
     comment: MutableState<ResponseCommentDTO>,
     navController: NavController,
-    removeComment: () -> Unit
+    removeComment: () -> Unit,
+    smashLikeComment:()->Unit
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -416,8 +417,9 @@ fun CommentPreview() {
                 )
             )
         },
-        rememberNavController()
-    ) {
+        rememberNavController(),
+        removeComment = {},
+        smashLikeComment = {}
+    )
 
-    }
 }

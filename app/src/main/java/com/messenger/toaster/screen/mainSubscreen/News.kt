@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -110,6 +111,10 @@ fun News(
                     !isAllLoading &&
                     (allPosts.size >= allCurrentPage * 15)
         }
+    }
+    var recomposeTrigger by remember { mutableStateOf(0) }
+    LaunchedEffect(recomposeTrigger) {
+        // Пустой LaunchedEffect для принудительного обновления
     }
 
     Surface(
@@ -201,13 +206,16 @@ fun News(
                                 }
                                 items(count = friendsPostCount.value) { index ->
                                     Post(
-                                        post = remember { mutableStateOf(friendPosts[index]) },
+                                        post = friendPosts[index],
                                         true,
                                         navController,
                                         "news",
-                                        index
-                                    ) {
-                                    }
+                                        index,
+                                        onCommentRemove = {friendPosts[index].popularComment = null},
+                                        onPostRemove = {},
+                                        smashLikePost = {friendNewsViewModel.smashPostLike(index)},
+                                        smashLikeComment = {friendNewsViewModel.smashCommentLike(index)}
+                                    )
                                 }
                             }
                         }
@@ -281,14 +289,19 @@ fun News(
                                     count = allPostCount.value,
                                     key = { index -> allPosts[index].id }) { index ->
                                     Post(
-                                        post = remember { mutableStateOf(allPosts[index]) },
+                                        post = allPosts[index],
                                         true,
                                         navController,
                                         "news",
-                                        index
-                                    ) {
-                                        allNewsViewModel.remove(index)
-                                    }
+                                        index,
+                                        onPostRemove = {
+                                            allNewsViewModel.remove(index)
+                                        },
+                                        smashLikePost = {allNewsViewModel.smashPostLike(index)
+                                                        recomposeTrigger++},
+                                        smashLikeComment = {allNewsViewModel.smashCommentLike(index)},
+                                        onCommentRemove = {allPosts[index].popularComment = null}
+                                    )
                                 }
                                 if (endReachedAll && !isAllRefreshing) {
                                     allNewsViewModel.loadNextPage("", context)

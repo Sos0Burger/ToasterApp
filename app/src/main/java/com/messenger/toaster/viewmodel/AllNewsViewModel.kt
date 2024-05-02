@@ -18,8 +18,11 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class AllNewsViewModel:ViewModel() {
-    private val _posts = MutableStateFlow<SnapshotStateList<ResponsePostDTO>>(SnapshotStateList())
+    private var _posts = MutableStateFlow<SnapshotStateList<ResponsePostDTO>>(SnapshotStateList())
     val posts = _posts
+
+    private val _edited = MutableStateFlow(false)
+    val edited = _edited
 
     private val _currentPage = MutableStateFlow(-1)
     val currentPage: StateFlow<Int> = _currentPage
@@ -43,6 +46,36 @@ class AllNewsViewModel:ViewModel() {
         loadPosts(query, context)
     }
 
+    fun addComment(index:Int){
+        val post = _posts.value[index]
+        post.comments++
+        _posts.value[index] = post
+    }
+
+    fun smashPostLike(index:Int){
+        val current = _posts
+        val post = _posts.value[index]
+        post.isLiked = !post.isLiked
+        if (post.isLiked){
+            post.likes++
+        }
+        else{
+            post.likes--
+        }
+        current.value[index] = post
+        _posts = current
+        viewModelScope.launch {
+            _edited.emit(!_edited.value)
+        }
+
+    }
+    fun smashCommentLike(index:Int){
+        val post = _posts.value[index]
+        val comment = post.popularComment
+        comment!!.isLiked = !comment.isLiked
+        post.popularComment = comment
+        _posts.value[index] = post
+    }
     fun refresh(query:String, context: Context){
         viewModelScope.launch {
             _isRefreshing.emit(true)

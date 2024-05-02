@@ -18,7 +18,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class ProfilePostViewModel: ViewModel() {
-    private val _posts = MutableStateFlow<SnapshotStateList<ResponsePostDTO>>(SnapshotStateList())
+    private var _posts = MutableStateFlow<SnapshotStateList<ResponsePostDTO>>(SnapshotStateList())
     val posts = _posts
 
     private val _currentPage = MutableStateFlow(0)
@@ -32,11 +32,32 @@ class ProfilePostViewModel: ViewModel() {
     val isRefreshing: StateFlow<Boolean>
         get() = _isRefreshing.asStateFlow()
 
-    fun update(index: Int, post:ResponsePostDTO){
+    fun addComment(index:Int){
+        val post = _posts.value[index]
+        post.comments++
         _posts.value[index] = post
     }
+    fun smashPostLike(index:Int){
+        val post = _posts.value[index]
+        post.isLiked = !post.isLiked
+        update(index, post)
+    }
+    fun smashCommentLike(index:Int){
+        val post = _posts.value[index]
+        val comment = post.popularComment
+        comment!!.isLiked = !comment.isLiked
+        post.popularComment = comment
+        update(index, post)
+    }
+    fun update(index: Int, post:ResponsePostDTO){
+        val current = _posts
+        current.value[index] = post
+        _posts = current
+    }
     fun remove(index: Int){
-        _posts.value.removeAt(index)
+        val current = _posts
+        current.value.removeAt(index)
+        _posts = current
     }
     fun loadNextPage(id:Int, query:String, context:Context) {
         loadPosts(id, query, context)

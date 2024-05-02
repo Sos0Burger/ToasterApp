@@ -30,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,12 +68,15 @@ import retrofit2.Response
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun Post(
-    post: MutableState<ResponsePostDTO>,
+    post: ResponsePostDTO,
     isLatestComment: Boolean,
     navController: NavController,
     from: String,
     index: Int? = null,
-    onRemove: () -> Unit
+    onPostRemove: () -> Unit,
+    onCommentRemove:() -> Unit,
+    smashLikePost:() -> Unit,
+    smashLikeComment:()->Unit
 ) {
     val isDropDown = remember {
         mutableStateOf(false)
@@ -95,7 +97,7 @@ fun Post(
             .fillMaxWidth(1f)
             .background(color = Night, shape = MaterialTheme.shapes.medium)
             .clickable(enabled = isLatestComment) {
-                navController.navigate(from + "/post/" + post.value.id.toString() + "/" + index)
+                navController.navigate(from + "/post/" + post.id.toString() + "/" + index)
             }
     ) {
         Row(
@@ -106,14 +108,14 @@ fun Post(
         ) {
             Row {
                 AsyncImage(
-                    model = if (post.value.creator.image == null)
+                    model = if (post.creator.image == null)
                         "https://memepedia.ru/wp-content/uploads/2021/01/anonimus-mem-6.jpg"
                     else
                         ImageRequest.Builder(LocalContext.current)
                             .data(
                                 RetrofitClient.getInstance().baseUrl().toString() +
                                         "file/" +
-                                        post.value.creator.image!!.id
+                                        post.creator.image!!.id
                             )
                             .crossfade(true)
                             .build(),
@@ -125,30 +127,30 @@ fun Post(
                         .clip(CircleShape)
                         .background(color = Color.DarkGray)
                         .clickable {
-                            navController.navigate("profile/" + post.value.creator.id)
+                            navController.navigate("profile/" + post.creator.id)
                         }
                 )
                 Column {
                     Text(
-                        text = post.value.creator.nickname
+                        text = post.creator.nickname
                             ?: "Альтернативное имя не указано",
                         fontSize = 16.sp,
                         color = Color.White
                     )
                     Text(
-                        text = "ID: " + post.value.creator.id.toString(),
+                        text = "ID: " + post.creator.id.toString(),
                         fontSize = 12.sp,
                         color = Color.White
                     )
                     Text(
-                        text = TimeConverter.longToLocalTime(post.value.date),
+                        text = TimeConverter.longToLocalTime(post.date),
                         fontSize = 12.sp,
                         color = Color.White
                     )
 
                 }
             }
-            if (post.value.creator.id == User.USER_ID) {
+            if (post.creator.id == User.USER_ID) {
                 Box {
                     if (isDropDown.value) {
                         DropdownMenu(
@@ -160,13 +162,13 @@ fun Post(
                                     isDropDown.value = false
                                     navController.navigate(
                                         from + "/postEdit/" +
-                                                post.value.id + "/" + index
+                                                post.id + "/" + index
                                     )
                                 })
                             DropdownMenuItem(text = { Text(text = "Удалить") }, onClick = {
 
                                 isDropDown.value = false
-                                onRemove()
+                                onPostRemove()
                             })
                         }
                     }
@@ -193,7 +195,7 @@ fun Post(
                 .padding(8.dp)
         ) {
             Text(
-                text = post.value.text.toString(),
+                text = post.text.toString(),
                 color = Color.White,
                 fontSize = 18.sp,
                 textAlign = TextAlign.Start,
@@ -209,8 +211,8 @@ fun Post(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        if (post.value.attachments.isNotEmpty()) {
-            val pagerState = rememberPagerState() { post.value.attachments.size }
+        if (post.attachments.isNotEmpty()) {
+            val pagerState = rememberPagerState() { post.attachments.size }
             Box(modifier = Modifier.padding(bottom = 8.dp)) {
                 HorizontalPager(
                     modifier = Modifier
@@ -224,7 +226,7 @@ fun Post(
                                 .data(
                                     RetrofitClient.getInstance().baseUrl().toString() +
                                             "file/" +
-                                            post.value.attachments[page].id
+                                            post.attachments[page].id
                                 )
                                 .crossfade(true)
                                 .build(),
@@ -234,7 +236,7 @@ fun Post(
                                 .clip(RoundedCornerShape(5))
                                 .height(512.dp)
                                 .clickable {
-                                    navController.navigate(from + "/post/" + post.value.id.toString() + "/" + index)
+                                    navController.navigate(from + "/post/" + post.id.toString() + "/" + index)
                                 }
                         )
                     }
@@ -252,7 +254,7 @@ fun Post(
                         text = (
                                 (pagerState.currentPage + 1).toString()
                                         + " / "
-                                        + post.value.attachments.size),
+                                        + post.attachments.size),
                         color = Color.White,
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
@@ -268,14 +270,14 @@ fun Post(
                 color = Color.Transparent,
                 onClick = {
                     val postApi = PostApiImpl()
-                    val response = postApi.smashLike(post.value.id, User.getCredentials())
+                    val response = postApi.smashLike(post.id, User.getCredentials())
                     response.enqueue(object : Callback<ResponsePostDTO> {
                         override fun onResponse(
                             call: Call<ResponsePostDTO>,
                             response: Response<ResponsePostDTO>
                         ) {
                             if (response.isSuccessful) {
-                                post.value = response.body()!!
+                                smashLikePost()
                             } else {
                                 val jsonObj = if (response.errorBody() != null) {
                                     response.errorBody()!!.byteString().utf8()
@@ -305,14 +307,14 @@ fun Post(
                 ) {
                     Icon(
                         painter = painterResource(
-                            id = if (post.value.isLiked) R.drawable.like else R.drawable.like_outlined
+                            id = if (post.isLiked) R.drawable.like else R.drawable.like_outlined
                         ),
                         contentDescription = null,
-                        tint = if (post.value.isLiked) Orange else Color.Gray
+                        tint = if (post.isLiked) Orange else Color.Gray
                     )
                     Spacer(modifier = Modifier.width(2.dp))
 
-                    Text(text = formatNumber(post.value.likes), color = Color.White, maxLines = 1)
+                    Text(text = formatNumber(post.likes), color = Color.White, maxLines = 1)
                 }
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -320,7 +322,7 @@ fun Post(
                 Surface(shape = CircleShape,
                     color = Color.Transparent,
                     onClick = {
-                        navController.navigate(from + "/post/" + post.value.id.toString() + "/" + index)
+                        navController.navigate(from + "/post/" + post.id.toString() + "/" + index)
                     }) {
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -335,7 +337,7 @@ fun Post(
                             tint = Orange
                         )
                         Spacer(modifier = Modifier.width(2.dp))
-                        Text(text = formatNumber(post.value.comments), color = Color.White)
+                        Text(text = formatNumber(post.comments), color = Color.White)
                     }
                 }
             }
@@ -347,14 +349,11 @@ fun Post(
                 modifier = Modifier.padding(top = 2.dp, end = 16.dp, start = 16.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
-            if (post.value.popularComment != null) {
+            if (post.popularComment != null) {
                 Comment(comment = remember {
-                    mutableStateOf(post.value.popularComment!!)
-                }, navController = navController) {
-                    post.value.popularComment = null
-                    post.value.comments -= 1
-                    isLatestCommentState.value = false
-                }
+                    mutableStateOf(post.popularComment!!)
+                }, navController = navController,
+                    removeComment = {onCommentRemove()}, smashLikeComment = {smashLikeComment()})
             }
             Spacer(modifier = Modifier.height(4.dp))
         }
@@ -367,8 +366,6 @@ fun Post(
 fun PostPreview() {
     Post(
         post =
-        remember {
-            mutableStateOf(
                 ResponsePostDTO(
                     1,
                     "Как\nсосать\nогромные\nпенисы\nкаждый\nбожий\nдень\nкрупные\nяйца\nтоже\nобожаю\nглотать\n",
@@ -388,10 +385,9 @@ fun PostPreview() {
                         false
                     )
                 )
-            )
-        },
+        ,
         true,
         rememberNavController(),
-        ""
-    ) {}
+        "",
+        onPostRemove = {}, smashLikePost = {}, onCommentRemove = {}, smashLikeComment = {})
 }

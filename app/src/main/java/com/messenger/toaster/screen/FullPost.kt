@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -76,7 +77,9 @@ fun FullPost(
     from: String,
     index: Int,
     fullPostViewModel: FullPostViewModel = viewModel(),
-    onRemove:()->Unit
+    onRemove: () -> Unit,
+    onPostLike: () -> Unit,
+    onAddComment: () -> Unit
 ) {
     val lazyListState = rememberLazyListState()
     val context = LocalContext.current
@@ -104,6 +107,10 @@ fun FullPost(
     }
     LaunchedEffect(Unit) {
         fullPostViewModel.getPost(id, context = context)
+    }
+    var recomposeTrigger by remember { mutableStateOf(0) }
+    LaunchedEffect(recomposeTrigger) {
+        // Пустой LaunchedEffect для принудительного обновления
     }
 
 
@@ -199,15 +206,23 @@ fun FullPost(
                     item {
                         Spacer(modifier = Modifier.height(4.dp))
                         Post(
-                            post = mutableStateOf(post),
+                            post = post,
                             isLatestComment = false,
                             navController,
                             from,
-                            index
-                        ) {
-                            onRemove()
-                            navController.popBackStack()
-                        }
+                            index,
+                            onPostRemove = {
+                                onRemove()
+                                navController.popBackStack()
+                            },
+                            onCommentRemove = {},
+                            smashLikeComment = {},
+                            smashLikePost = {
+                                fullPostViewModel.smashPostLike()
+                                onPostLike()
+                                recomposeTrigger++
+                            }
+                        )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                     item {
@@ -259,9 +274,11 @@ fun FullPost(
                         }
                     }
                     items(count = comments.size) { index ->
-                        Comment(comment = comments[index], navController) {
+                        Comment(comment = comments[index], navController, removeComment = {
                             comments.remove(comments[index])
-                        }
+                        }, smashLikeComment = {
+                            comments[index].value.isLiked = !comments[index].value.isLiked
+                        })
                     }
 
                 }
@@ -294,7 +311,7 @@ fun FullPost(
                                             scope.launch {
                                                 lazyListState.animateScrollToItem(0, 0)
                                             }
-
+                                            onAddComment()
                                         } else {
                                             val jsonObj = if (response.errorBody() != null) {
                                                 response.errorBody()!!.byteString().utf8()
@@ -352,5 +369,12 @@ fun FullPost(
 @Preview(showBackground = true, backgroundColor = 1250067)
 @Composable
 fun FullPostPreview() {
-    FullPost(id = "1", navController = rememberNavController(), "news", 1){}
+    FullPost(
+        id = "1",
+        navController = rememberNavController(),
+        "news",
+        1,
+        onRemove = {},
+        onPostLike = {},
+        onAddComment = {})
 }

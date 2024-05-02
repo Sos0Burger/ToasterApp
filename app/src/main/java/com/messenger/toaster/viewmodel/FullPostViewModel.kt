@@ -33,6 +33,16 @@ class FullPostViewModel : ViewModel() {
     private val _isPostLoading = MutableStateFlow(true)
     val isPostLoading = _isPostLoading
 
+    fun smashPostLike(){
+        _post.value.isLiked = !_post.value.isLiked
+        if (_post.value.isLiked){
+            _post.value.likes++
+        }
+        else{
+            _post.value.likes--
+        }
+    }
+
     fun getPost(id:String, context:Context) {
         val postApi = PostApiImpl()
         val response = postApi.getPost(id.toInt(), User.getCredentials())

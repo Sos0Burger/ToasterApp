@@ -35,7 +35,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -331,14 +330,18 @@ fun Profile(
 
                 items(count = postCount.value, key = { index -> posts[index].id }) { index ->
                     Post(
-                        post = remember { mutableStateOf(posts[index]) },
+                        post = posts[index],
                         true,
                         navController = navController,
                         "profile",
-                        index
-                    ) {
-                        profilePostViewModel.remove(index)
-                    }
+                        index,
+                        onPostRemove = {
+                            profilePostViewModel.remove(index)
+                        },
+                        onCommentRemove = {posts[index].popularComment = null},
+                        smashLikePost = {profilePostViewModel.smashPostLike(index)},
+                        smashLikeComment = {profilePostViewModel.smashCommentLike(index)}
+                    )
                 }
 
                 item {

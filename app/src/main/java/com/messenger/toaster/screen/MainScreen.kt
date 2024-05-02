@@ -154,10 +154,23 @@ fun MainScreen() {
                     navController = navController,
                     "news",
                     backStackEntry.arguments?.getString("index")!!.toInt(),
-                    fullPostViewModel
-                ) {
-                    newsViewModel.remove(backStackEntry.arguments?.getString("index")!!.toInt())
-                }
+                    fullPostViewModel,
+                    onRemove = {
+                        newsViewModel.remove(
+                            backStackEntry.arguments?.getString("index")!!.toInt()
+                        )
+                    },
+                    onPostLike = {
+                        newsViewModel.smashPostLike(
+                            backStackEntry.arguments?.getString("index")!!.toInt()
+                        )
+                    },
+                    onAddComment = {
+                        newsViewModel.addComment(
+                            backStackEntry.arguments?.getString("index")!!.toInt()
+                        )
+                    }
+                )
             }
             composable("profile/post/{postID}/{index}") { backStackEntry ->
                 FullPost(
@@ -165,12 +178,27 @@ fun MainScreen() {
                     navController = navController,
                     "profile",
                     backStackEntry.arguments?.getString("index")!!.toInt(),
-                    fullPostViewModel
-                ) {
-                    profilePostViewModel.remove(
-                        backStackEntry.arguments?.getString("index")!!.toInt()
-                    )
-                }
+                    fullPostViewModel,
+                    onRemove = {
+                        profilePostViewModel.remove(
+                            backStackEntry.arguments?.getString("index")!!.toInt()
+                        )
+                    },
+                    onPostLike = {
+                        profilePostViewModel.smashPostLike(
+                            backStackEntry.arguments?.getString(
+                                "index"
+                            )!!.toInt()
+                        )
+                    },
+                    onAddComment = {
+                        profilePostViewModel.addComment(
+                            backStackEntry.arguments?.getString(
+                                "index"
+                            )!!.toInt()
+                        )
+                    }
+                )
             }
             composable("post/{postID}/images/{initial}") { backStackEntry ->
                 FullScreenImages(

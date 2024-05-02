@@ -3,6 +3,7 @@ package com.messenger.toaster.viewmodel
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.messenger.toaster.api.impl.UserApiImpl
@@ -17,7 +18,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class FriendNewsViewModel: ViewModel() {
-    private val _posts = MutableStateFlow<List<ResponsePostDTO>>(emptyList())
+    private val _posts = MutableStateFlow<SnapshotStateList<ResponsePostDTO>>(SnapshotStateList())
     val posts = _posts
 
     private val _currentPage = MutableStateFlow(-1)
@@ -32,6 +33,18 @@ class FriendNewsViewModel: ViewModel() {
         get() = _isRefreshing.asStateFlow()
 
 
+    fun smashPostLike(index:Int){
+        val post = _posts.value[index]
+        post.isLiked = !post.isLiked
+        _posts.value[index] = post
+    }
+    fun smashCommentLike(index:Int){
+        val post = _posts.value[index]
+        val comment = post.popularComment
+        comment!!.isLiked = !comment.isLiked
+        post.popularComment = comment
+        _posts.value[index] = post
+    }
     fun loadNextPage(query:String, context: Context) {
         _currentPage.value++
         loadPosts(query, context)
@@ -40,7 +53,7 @@ class FriendNewsViewModel: ViewModel() {
     fun refresh(query:String, context:Context){
         viewModelScope.launch {
             _isRefreshing.emit(true)
-            _posts.value = emptyList()
+            _posts.value = SnapshotStateList()
             _currentPage.value = -1
             loadNextPage(query, context)
         }
