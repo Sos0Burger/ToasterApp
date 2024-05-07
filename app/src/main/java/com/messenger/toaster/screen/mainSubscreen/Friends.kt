@@ -64,6 +64,7 @@ import com.messenger.toaster.dto.FriendDTO
 import com.messenger.toaster.infomessage.InfoSnackBar
 import com.messenger.toaster.ui.theme.Orange
 import com.messenger.toaster.viewmodel.UpdateViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -146,75 +147,81 @@ fun Friends(navController: NavController) {
     val buttonColors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent)
     val context = LocalContext.current
 
+    var loadFriendJob: Job? = null
+
     fun getFriends() {
-        val userApi = UserApiImpl()
-        if (pageState.currentPage == 3 &&
-            !(search.value.length >= 3 || search.value.toIntOrNull() != null)
-        ) {
-            friendSearchList.clear()
-            return
-        } else {
-            val response =
-                when (pageState.currentPage) {
-                    2 -> userApi.getSent(User.getCredentials())
-                    1 -> userApi.getPending(
-                        User.getCredentials()
-                    )
-
-                    3 -> userApi.searchUsers(search.value, User.getCredentials())
-
-                    else -> userApi.getFriends(User.getCredentials())
-                }
-            response.enqueue(object : Callback<List<FriendDTO>> {
-                override fun onResponse(
-                    call: Call<List<FriendDTO>>,
-                    response: Response<List<FriendDTO>>
-                ) {
-                    if (response.isSuccessful) {
-                        when (pageState.currentPage) {
-                            2 -> {
-                                friendSentList.clear()
-                                friendSentList.addAll(response.body()!!)
-                            }
-
-                            1 -> {
-                                friendPendingList.clear()
-                                friendPendingList.addAll(response.body()!!)
-                            }
-
-                            3 -> {
-                                friendSearchList.clear()
-                                friendSearchList.addAll(response.body()!!)
-                            }
-
-                            else -> {
-                                friendList.clear()
-                                friendList.addAll(response.body()!!)
-                            }
-                        }
-
-                    } else {
-                        val jsonObj = if (response.errorBody() != null) {
-                            response.errorBody()!!.byteString().utf8()
-                        } else {
-                            response.code().toString()
-                        }
-
-                        Log.d(
-                            "server",
-                            response.code().toString()
+        loadFriendJob?.cancel()
+        loadFriendJob = coroutineScope.launch {
+            val userApi = UserApiImpl()
+            if (pageState.currentPage == 3 &&
+                !(search.value.length >= 3 || search.value.toIntOrNull() != null)
+            ) {
+                friendSearchList.clear()
+                loadFriendJob?.cancel()
+            } else {
+                val currentPage = pageState.currentPage
+                val response =
+                    when (currentPage) {
+                        2 -> userApi.getSent(User.getCredentials())
+                        1 -> userApi.getPending(
+                            User.getCredentials()
                         )
-                        errorMessage.value = jsonObj
+
+                        3 -> userApi.searchUsers(search.value, User.getCredentials())
+
+                        else -> userApi.getFriends(User.getCredentials())
+                    }
+                response.enqueue(object : Callback<List<FriendDTO>> {
+                    override fun onResponse(
+                        call: Call<List<FriendDTO>>,
+                        response: Response<List<FriendDTO>>
+                    ) {
+                        if (response.isSuccessful) {
+                            when (currentPage) {
+                                2 -> {
+                                    friendSentList.clear()
+                                    friendSentList.addAll(response.body()!!)
+                                }
+
+                                1 -> {
+                                    friendPendingList.clear()
+                                    friendPendingList.addAll(response.body()!!)
+                                }
+
+                                3 -> {
+                                    friendSearchList.clear()
+                                    friendSearchList.addAll(response.body()!!)
+                                }
+
+                                else -> {
+                                    friendList.clear()
+                                    friendList.addAll(response.body()!!)
+                                }
+                            }
+
+                        } else {
+                            val jsonObj = if (response.errorBody() != null) {
+                                response.errorBody()!!.byteString().utf8()
+                            } else {
+                                response.code().toString()
+                            }
+
+                            Log.d(
+                                "server",
+                                response.code().toString()
+                            )
+                            errorMessage.value = jsonObj
+                            snackBarState.value = true
+                        }
+                    }
+
+                    override fun onFailure(call: Call<List<FriendDTO>>, t: Throwable) {
+                        Log.d("server", t.message.toString())
+                        errorMessage.value = "Ошибка подключения"
                         snackBarState.value = true
                     }
-                }
-
-                override fun onFailure(call: Call<List<FriendDTO>>, t: Throwable) {
-                    Log.d("server", t.message.toString())
-                    errorMessage.value = "Ошибка подключения"
-                    snackBarState.value = true
-                }
-            })
+                })
+            }
         }
     }
     Surface(

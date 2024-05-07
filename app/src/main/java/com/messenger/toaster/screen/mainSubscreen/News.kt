@@ -304,7 +304,7 @@ fun News(
                                     )
                                 }
                                 if (endReachedAll && !isAllRefreshing) {
-                                    allNewsViewModel.loadNextPage("", context)
+                                    allNewsViewModel.loadNextPage(search.value, context)
                                 }
                             }
                         }

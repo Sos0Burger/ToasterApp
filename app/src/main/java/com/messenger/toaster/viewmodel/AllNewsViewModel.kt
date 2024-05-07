@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.messenger.toaster.api.impl.UserApiImpl
 import com.messenger.toaster.data.User
 import com.messenger.toaster.dto.ResponsePostDTO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,8 @@ class AllNewsViewModel:ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading
     private val _isRefreshing = MutableStateFlow(false)
+
+    private var loadPostsJob: Job? = null
 
     val isRefreshing: StateFlow<Boolean>
         get() = _isRefreshing.asStateFlow()
@@ -85,7 +88,8 @@ class AllNewsViewModel:ViewModel() {
         }
     }
     private fun loadPosts(query:String, context: Context) {
-        viewModelScope.launch {
+        loadPostsJob?.cancel()
+        loadPostsJob = viewModelScope.launch {
             _isLoading.emit(true)
             val response = UserApiImpl().getFeed(query, currentPage.value, User.getCredentials())
             response.enqueue(object: Callback<List<ResponsePostDTO>> {
