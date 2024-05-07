@@ -236,7 +236,7 @@ fun Post(
                                 .clip(RoundedCornerShape(5))
                                 .height(512.dp)
                                 .clickable {
-                                    navController.navigate(from + "/post/" + post.id.toString() + "/" + index)
+                                    navController.navigate("post/" + post.id.toString() + "/images/" + index)
                                 }
                         )
                     }

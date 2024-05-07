@@ -13,7 +13,7 @@ object RetrofitClient {
                 .newBuilder()
                 .readTimeout(15, TimeUnit.SECONDS)
                 .build())
-            .baseUrl("http://192.168.1.236:8080/")
+            .baseUrl("http://158.255.5.102:8080/")
             .addConverterFactory(MoshiConverterFactory.create())
             .build()
     }
